@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ProcessAnalysis } from './process-analysis';
+import { EditorToolbar } from './editor-toolbar';
 
-describe('ProcessAnalysis', () => {
-  let component: ProcessAnalysis;
-  let fixture: ComponentFixture<ProcessAnalysis>;
+describe('EditorToolbar', () => {
+  let component: EditorToolbar;
+  let fixture: ComponentFixture<EditorToolbar>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ProcessAnalysis],
+      imports: [EditorToolbar],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ProcessAnalysis);
+    fixture = TestBed.createComponent(EditorToolbar);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

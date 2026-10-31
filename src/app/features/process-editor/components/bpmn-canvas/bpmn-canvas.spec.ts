@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ProcessEditor } from './process-editor';
+import { BpmnCanvas } from './bpmn-canvas';
 
-describe('ProcessEditor', () => {
-  let component: ProcessEditor;
-  let fixture: ComponentFixture<ProcessEditor>;
+describe('BpmnCanvas', () => {
+  let component: BpmnCanvas;
+  let fixture: ComponentFixture<BpmnCanvas>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ProcessEditor],
+      imports: [BpmnCanvas],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ProcessEditor);
+    fixture = TestBed.createComponent(BpmnCanvas);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
