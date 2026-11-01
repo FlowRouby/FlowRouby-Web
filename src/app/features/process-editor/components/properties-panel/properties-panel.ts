@@ -1,9 +1,11 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
+import { BpmnModeler } from '../../services/bpmn-modeler';
 
 @Component({
-  imports: [],
   selector: 'app-properties-panel',
   styleUrl: './properties-panel.css',
   templateUrl: './properties-panel.html',
 })
-export class PropertiesPanel {}
+export class PropertiesPanel {
+  protected readonly element = inject(BpmnModeler).selection;
+}

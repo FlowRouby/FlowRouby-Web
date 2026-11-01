@@ -1,3 +1,4 @@
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { BpmnModeler } from '../services/bpmn-modeler';
 import { ProcessEditorPage } from './process-editor-page';
@@ -15,7 +16,7 @@ describe('ProcessEditorPage', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ProcessEditorPage],
-      providers: [{ provide: BpmnModeler, useValue: { attach: () => {}, destroy: () => {} } }],
+      providers: [{ provide: BpmnModeler, useValue: { attach: () => {}, destroy: () => {}, selection: signal(null) } }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ProcessEditorPage);

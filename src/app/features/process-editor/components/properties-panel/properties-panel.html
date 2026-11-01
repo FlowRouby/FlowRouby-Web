@@ -1,4 +1,22 @@
 <div class="p-4">
   <h2 class="text-sm font-semibold">Properties</h2>
-  <p class="mt-1 text-sm text-content-muted">Select an element to see its properties.</p>
+
+  @if (element(); as selected) {
+    <dl class="mt-3 space-y-3 text-sm">
+      <div>
+        <dt class="text-content-muted">Type</dt>
+        <dd>{{ selected.type }}</dd>
+      </div>
+      <div>
+        <dt class="text-content-muted">ID</dt>
+        <dd class="break-all font-mono">{{ selected.id }}</dd>
+      </div>
+      <div>
+        <dt class="text-content-muted">Name</dt>
+        <dd>{{ selected.name || '—' }}</dd>
+      </div>
+    </dl>
+  } @else {
+    <p class="mt-1 text-sm text-content-muted">Select an element to see its properties.</p>
+  }
 </div>
