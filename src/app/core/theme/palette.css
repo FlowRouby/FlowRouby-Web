@@ -1,0 +1,14 @@
+/* Primitive scales. Raw values only: components must use the semantic tokens. */
+@theme {
+  --color-ruby-50: #fff1f2;
+  --color-ruby-100: #ffe0e3;
+  --color-ruby-200: #ffc6cc;
+  --color-ruby-300: #ff9ca7;
+  --color-ruby-400: #fb6379;
+  --color-ruby-500: #ef2f4f;
+  --color-ruby-600: #cc1236;
+  --color-ruby-700: #a90d2d;
+  --color-ruby-800: #8b0f2b;
+  --color-ruby-900: #751228;
+  --color-ruby-950: #410513;
+}
