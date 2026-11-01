@@ -1,5 +1,6 @@
 import { Service, signal } from '@angular/core';
 import Modeler from 'bpmn-js/lib/Modeler';
+import { validateElementId } from '../models/element-id';
 import type { SelectedElement } from '../models/selected-element';
 
 const ZOOM_FACTOR = 1.2;
@@ -20,7 +21,11 @@ interface Selection {
 }
 
 interface Modeling {
-  updateProperties(element: BpmnElement, properties: { name?: string }): void;
+  updateProperties(element: BpmnElement, properties: { id?: string; name?: string }): void;
+}
+
+interface Moddle {
+  ids: { assigned(id: string): unknown };
 }
 
 @Service()
@@ -62,6 +67,23 @@ export class BpmnModeler {
     this.#modeler?.get<Modeling>('modeling').updateProperties(element, { name: name || undefined });
   }
 
+  /** Why `id` cannot be applied to the selected element, or null when it can. */
+  validateId(id: string): string | null {
+    const current = this.#selectedElement()?.id;
+    return validateElementId(id, (candidate) => candidate !== current && this.#isIdTaken(candidate));
+  }
+
+  /** Applies a new id to the selected element if valid; otherwise changes nothing and returns the reason. */
+  updateId(id: string): string | null {
+    const element = this.#selectedElement();
+    const error = this.validateId(id);
+    if (!element || error) return error;
+    if (id !== element.id) {
+      this.#modeler?.get<Modeling>('modeling').updateProperties(element, { id });
+    }
+    return null;
+  }
+
   zoomIn(): void {
     this.#zoomBy(ZOOM_FACTOR);
   }
@@ -81,6 +103,10 @@ export class BpmnModeler {
   #zoomBy(factor: number): void {
     const canvas = this.#canvas;
     canvas?.zoom(canvas.zoom() * factor);
+  }
+
+  #isIdTaken(id: string): boolean {
+    return Boolean(this.#modeler?.get<Moddle>('moddle').ids.assigned(id));
   }
 
   #selectedElement(): BpmnElement | undefined {
