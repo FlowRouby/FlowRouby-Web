@@ -1,12 +1,11 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component } from '@angular/core';
+import { BpmnCanvas } from './features/process-editor/components/bpmn-canvas/bpmn-canvas';
+import { EditorToolbar } from './features/process-editor/components/editor-toolbar/editor-toolbar';
 
 @Component({
-  imports: [RouterOutlet],
+  imports: [EditorToolbar, BpmnCanvas],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',
 })
-export class App {
-  protected readonly title = signal('FlowRouby-Web');
-}
+export class App {}

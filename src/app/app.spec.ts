@@ -1,24 +1,20 @@
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
+import { BpmnModeler } from './features/process-editor/services/bpmn-modeler';
 
 describe('App', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [App],
-    })
-      .compileComponents();
+      providers: [{ provide: BpmnModeler, useValue: { attach: () => {}, destroy: () => {} } }],
+    }).compileComponents();
   });
 
-  it('should create the app', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
-    expect(app).toBeTruthy();
-  });
-
-  it('should render title', async () => {
+  it('should render the toolbar and the canvas', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Hello, FlowRouby-Web');
+    expect(compiled.querySelector('app-editor-toolbar')).toBeTruthy();
+    expect(compiled.querySelector('app-bpmn-canvas')).toBeTruthy();
   });
 });
