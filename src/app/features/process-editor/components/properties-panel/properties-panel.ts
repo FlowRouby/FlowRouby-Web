@@ -7,5 +7,10 @@ import { BpmnModeler } from '../../services/bpmn-modeler';
   templateUrl: './properties-panel.html',
 })
 export class PropertiesPanel {
-  protected readonly element = inject(BpmnModeler).selection;
+  readonly #modeler = inject(BpmnModeler);
+  protected readonly element = this.#modeler.selection;
+
+  protected rename(name: string): void {
+    this.#modeler.updateName(name);
+  }
 }

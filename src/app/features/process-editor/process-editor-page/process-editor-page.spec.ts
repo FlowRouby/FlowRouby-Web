@@ -16,7 +16,7 @@ describe('ProcessEditorPage', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ProcessEditorPage],
-      providers: [{ provide: BpmnModeler, useValue: { attach: () => {}, destroy: () => {}, selection: signal(null) } }],
+      providers: [{ provide: BpmnModeler, useValue: { attach: () => {}, destroy: () => {}, selection: signal(null), updateName: () => {} } }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ProcessEditorPage);

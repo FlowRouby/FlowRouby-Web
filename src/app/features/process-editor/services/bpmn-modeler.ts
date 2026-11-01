@@ -19,6 +19,10 @@ interface Selection {
   get(): BpmnElement[];
 }
 
+interface Modeling {
+  updateProperties(element: BpmnElement, properties: { name?: string }): void;
+}
+
 @Service()
 export class BpmnModeler {
   #modeler?: Modeler;
@@ -51,6 +55,13 @@ export class BpmnModeler {
     return result?.xml ?? '';
   }
 
+  /** Renames the selected element through the command stack, so undo and redo keep working. */
+  updateName(name: string): void {
+    const element = this.#selectedElement();
+    if (!element) return;
+    this.#modeler?.get<Modeling>('modeling').updateProperties(element, { name: name || undefined });
+  }
+
   zoomIn(): void {
     this.#zoomBy(ZOOM_FACTOR);
   }
@@ -72,13 +83,15 @@ export class BpmnModeler {
     canvas?.zoom(canvas.zoom() * factor);
   }
 
-  #syncSelection(): void {
+  #selectedElement(): BpmnElement | undefined {
     const selected = this.#modeler?.get<Selection>('selection').get() ?? [];
-    const [element] = selected;
+    return selected.length === 1 ? selected[0] : undefined;
+  }
+
+  #syncSelection(): void {
+    const element = this.#selectedElement();
     this.#selection.set(
-      element && selected.length === 1
-        ? { id: element.id, type: element.type, name: element.businessObject.name }
-        : null,
+      element ? { id: element.id, type: element.type, name: element.businessObject.name } : null,
     );
   }
 }
