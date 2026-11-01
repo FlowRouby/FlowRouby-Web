@@ -1,9 +1,8 @@
 import { Component } from '@angular/core';
-import { BpmnCanvas } from './features/process-editor/components/bpmn-canvas/bpmn-canvas';
-import { EditorToolbar } from './features/process-editor/components/editor-toolbar/editor-toolbar';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
-  imports: [EditorToolbar, BpmnCanvas],
+  imports: [RouterOutlet],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',
