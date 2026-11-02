@@ -1,6 +1,9 @@
 <div class="flex h-full flex-col">
   <header class="flex items-center justify-between border-b border-border bg-surface px-4 py-2">
-    <h1 class="text-base font-semibold text-primary">FlowRouby</h1>
+    <div class="head-logo flex flex-row items-center gap-2">
+      <img src="FlowRouby-Logo.png" alt="FlowRouby Logo" class="h-8 w-auto"/>
+          <h1 class="text-base font-semibold text-primary">FlowRouby</h1>
+    </div>
     <div class="flex items-center gap-2">
       <button type="button" class="rounded-control border border-border px-3 py-1 text-sm hover:bg-primary-soft aria-pressed:bg-primary-soft aria-pressed:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring" [attr.aria-pressed]="analysisOpen()" (click)="analysisOpen.set(!analysisOpen())">Analysis</button>
       <button type="button" class="rounded-control border border-border px-3 py-1 text-sm hover:bg-primary-soft aria-pressed:bg-primary-soft aria-pressed:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring" [attr.aria-pressed]="propertiesOpen()" (click)="propertiesOpen.set(!propertiesOpen())">Properties</button>
