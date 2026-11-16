@@ -76,6 +76,15 @@ describe('FormalAnalysisView', () => {
     expect(definition.querySelector('app-node-ref')).toBeNull();
   });
 
+  it('draws the DFA diagram between the formal definition and the table, flagging the loops', async () => {
+    const { root } = await render(VALID_LOOP_RESULT);
+    const html = root.querySelector('section[aria-label="DFA"]') as HTMLElement;
+    const parts = [...html.children].map((child) => child.tagName.toLowerCase());
+
+    expect(parts.indexOf('app-dfa-diagram')).toBe(parts.indexOf('dl') + 1);
+    expect(root.querySelectorAll('app-dfa-diagram g.dfa-node[data-loop="valid"]')).toHaveLength(2);
+  });
+
   it('shows a symbol with its BPMN id as a button that focuses the element', async () => {
     const { root } = await render(XOR_RESULT);
     const button = [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'task_1 · Review');

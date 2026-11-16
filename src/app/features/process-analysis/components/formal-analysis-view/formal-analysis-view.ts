@@ -2,11 +2,12 @@ import { Component, computed, input } from '@angular/core';
 import type { CompileResult, LoopFinding } from '../../../../core/models/compile-result';
 import { deadlockLabel, loopLabel } from '../../models/analysis-messages';
 import { flowOrder } from '../../models/dfa-order';
+import { DfaDiagram } from '../dfa-diagram/dfa-diagram';
 import { DiagnosticList } from '../diagnostic-list/diagnostic-list';
 import { NodeRef } from '../node-ref/node-ref';
 
 @Component({
-  imports: [NodeRef, DiagnosticList],
+  imports: [NodeRef, DiagnosticList, DfaDiagram],
   selector: 'app-formal-analysis-view',
   templateUrl: './formal-analysis-view.html',
   host: { class: 'block space-y-4 text-sm' },

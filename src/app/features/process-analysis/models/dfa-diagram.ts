@@ -26,7 +26,7 @@ export interface DiagramEdge {
   loop: DiagramLoop;
 }
 
-export interface DfaDiagram {
+export interface DfaLayout {
   width: number;
   height: number;
   /** Radius of every state circle. */
@@ -120,7 +120,7 @@ function loopKind(findings: readonly LoopFinding[], test: (finding: LoopFinding)
  * Lays a DFA out as a state diagram: one column per breadth-first layer, left to right, with straight arrows between
  * adjacent layers and curves for everything else. Pure: the result carries all the coordinates a template needs.
  */
-export function dfaDiagram(dfa: Dfa, loops: readonly LoopFinding[]): DfaDiagram {
+export function dfaDiagram(dfa: Dfa, loops: readonly LoopFinding[]): DfaLayout {
   const order = flowOrder(dfa);
   if (order.states.length === 0) {
     return { width: 0, height: 0, radius: RADIUS, entry: null, nodes: [], edges: [] };

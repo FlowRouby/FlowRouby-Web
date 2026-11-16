@@ -1,0 +1,46 @@
+<div class="overflow-x-auto">
+  <svg
+    role="img"
+    aria-label="Diagrama de estados del DFA"
+    class="max-w-none text-xs"
+    [attr.width]="layout().width"
+    [attr.height]="layout().height"
+    [attr.viewBox]="'0 0 ' + layout().width + ' ' + layout().height"
+  >
+    <defs>
+      @for (kind of ['plain', 'valid', 'infinite']; track kind) {
+        <marker [attr.id]="markerId($any(kind))" viewBox="0 0 8 8" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" refX="8" refY="4" orient="auto">
+          <path d="M 0 0 L 8 4 L 0 8 z" [class]="fillClass($any(kind))" />
+        </marker>
+      }
+    </defs>
+
+    @if (layout().entry; as entry) {
+      <line class="stroke-content" stroke-width="1.5" [attr.x1]="entry.x1" [attr.y1]="entry.y1" [attr.x2]="entry.x2" [attr.y2]="entry.y2" [attr.marker-end]="markerRef(null)" />
+    }
+
+    @for (edge of layout().edges; track edge.from + '>' + edge.to) {
+      <g class="dfa-edge" [attr.data-loop]="edge.loop">
+        <path fill="none" [class]="strokeClass(edge.loop)" [attr.d]="edge.path" [attr.stroke-width]="strokeWidth(edge.loop)" [attr.marker-end]="markerRef(edge.loop)" />
+        <text class="fill-content stroke-surface font-mono [paint-order:stroke] [stroke-linejoin:round] [stroke-width:4px]" text-anchor="middle" dominant-baseline="central" [attr.x]="edge.labelX" [attr.y]="edge.labelY">{{ edge.label }}</text>
+      </g>
+    }
+
+    @for (node of layout().nodes; track node.state) {
+      <g class="dfa-node" [attr.data-state]="node.state" [attr.data-loop]="node.loop">
+        <circle class="fill-surface" [class]="strokeClass(node.loop)" [attr.cx]="node.x" [attr.cy]="node.y" [attr.r]="layout().radius" [attr.stroke-width]="strokeWidth(node.loop)" />
+        @if (node.isAccept) {
+          <circle class="dfa-accept fill-none" [class]="strokeClass(node.loop)" [attr.cx]="node.x" [attr.cy]="node.y" [attr.r]="layout().radius - 4" [attr.stroke-width]="strokeWidth(node.loop)" />
+        }
+        <text class="fill-content font-mono" text-anchor="middle" dominant-baseline="central" [attr.x]="node.x" [attr.y]="node.y">{{ node.state }}</text>
+      </g>
+    }
+  </svg>
+</div>
+
+<p class="mt-1 text-xs text-content-muted">
+  Flecha de entrada: estado inicial. Doble círculo: estado de aceptación.
+  @if (hasLoop()) {
+    &ngsp;Trazo grueso: estados y transiciones de un ciclo.
+  }
+</p>
