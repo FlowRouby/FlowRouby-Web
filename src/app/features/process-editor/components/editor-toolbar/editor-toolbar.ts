@@ -1,6 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import type { SampleProcess } from '../../../../core/models/sample-process';
+import { ConfirmDialog } from '../../../../core/services/confirm-dialog';
 import { SampleApi } from '../../../../core/services/sample-api';
 import { BpmnModeler } from '../../services/bpmn-modeler';
 import { DiagramLoader } from '../../services/diagram-loader';
@@ -16,6 +17,7 @@ export class EditorToolbar {
   readonly #modeler = inject(BpmnModeler);
   readonly #loader = inject(DiagramLoader);
   readonly #sampleApi = inject(SampleApi);
+  readonly #dialog = inject(ConfirmDialog);
 
   readonly #samples = signal<SampleProcess[]>([]);
   readonly #catalogState = signal<CatalogState>('loading');
@@ -78,7 +80,12 @@ export class EditorToolbar {
 
   /** Empties the canvas, the analysis and the kept diagram, after the user confirms. */
   protected async clearDiagram(select: HTMLSelectElement): Promise<void> {
-    if (!window.confirm('¿Limpiar el diagrama? Se perderá lo que no se haya exportado.')) return;
+    const confirmed = await this.#dialog.confirm({
+      title: '¿Limpiar el diagrama?',
+      text: 'Se perderá lo que no se haya exportado.',
+      confirmText: 'Limpiar',
+    });
+    if (!confirmed) return;
     this.#supersedeSampleLoad();
     select.value = '';
     await this.#loader.clear();

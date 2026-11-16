@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Subject, of, throwError } from 'rxjs';
 import type { ApiError } from '../../../../core/models/api-error';
 import type { SampleProcess } from '../../../../core/models/sample-process';
+import { ConfirmDialog } from '../../../../core/services/confirm-dialog';
 import { SampleApi } from '../../../../core/services/sample-api';
 import { BpmnModeler } from '../../services/bpmn-modeler';
 import { DiagramLoader } from '../../services/diagram-loader';
@@ -16,6 +17,7 @@ describe('EditorToolbar', () => {
   let fixture: ComponentFixture<EditorToolbar>;
   const modeler = { exportXml: vi.fn(), zoomIn: vi.fn(), zoomOut: vi.fn(), zoomFit: vi.fn() };
   const loader = { load: vi.fn(), clear: vi.fn() };
+  const dialog = { confirm: vi.fn() };
   const sampleApi = { list: vi.fn(), xml: vi.fn() };
 
   const create = async () => {
@@ -33,6 +35,7 @@ describe('EditorToolbar', () => {
         { provide: BpmnModeler, useValue: modeler },
         { provide: DiagramLoader, useValue: loader },
         { provide: SampleApi, useValue: sampleApi },
+        { provide: ConfirmDialog, useValue: dialog },
       ],
     }).compileComponents();
   });
@@ -73,16 +76,12 @@ describe('EditorToolbar', () => {
 
   describe('clearing the diagram', () => {
     const clearButton = () => [...root().querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Limpiar')!;
-    let confirm: ReturnType<typeof vi.spyOn>;
-
     beforeEach(async () => {
-      confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+      dialog.confirm.mockResolvedValue(true);
       loader.clear.mockResolvedValue(undefined);
       await create();
       fixture.detectChanges();
     });
-
-    afterEach(() => confirm.mockRestore());
 
     it('is placed after the sample selector and before the divider', () => {
       const children = [...root().firstElementChild!.children];
@@ -94,12 +93,16 @@ describe('EditorToolbar', () => {
       clearButton().click();
       await fixture.whenStable();
 
-      expect(confirm).toHaveBeenCalledWith('¿Limpiar el diagrama? Se perderá lo que no se haya exportado.');
+      expect(dialog.confirm).toHaveBeenCalledWith({
+        title: '¿Limpiar el diagrama?',
+        text: 'Se perderá lo que no se haya exportado.',
+        confirmText: 'Limpiar',
+      });
       expect(loader.clear).toHaveBeenCalledTimes(1);
     });
 
     it('changes nothing when the user cancels', async () => {
-      confirm.mockReturnValue(false);
+      dialog.confirm.mockResolvedValue(false);
       const pending = new Subject<string>();
       sampleApi.xml.mockReturnValue(pending);
       choose('01-secuencial');
