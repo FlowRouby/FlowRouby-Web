@@ -12,7 +12,17 @@ export class BpmnCanvas {
   private readonly container = viewChild.required<ElementRef<HTMLElement>>('container');
 
   constructor() {
-    afterNextRender(() => this.#modeler.attach(this.container().nativeElement));
-    inject(DestroyRef).onDestroy(() => this.#modeler.destroy());
+    const destroyRef = inject(DestroyRef);
+    afterNextRender(() => {
+      const element = this.container().nativeElement;
+      void this.#modeler.attach(element);
+      // Panels around the canvas can be resized or hidden without the window changing size.
+      if (typeof ResizeObserver !== 'undefined') {
+        const observer = new ResizeObserver(() => this.#modeler.resized());
+        observer.observe(element);
+        destroyRef.onDestroy(() => observer.disconnect());
+      }
+    });
+    destroyRef.onDestroy(() => this.#modeler.destroy());
   }
 }

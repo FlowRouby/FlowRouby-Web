@@ -11,6 +11,7 @@ export const DEFAULT_MARKER_GROUP = 'diagnostics';
 interface Canvas {
   zoom(): number;
   zoom(level: number | 'fit-viewport', center?: 'auto'): number;
+  resized(): void;
   addMarker(element: BpmnElement, marker: string): void;
   removeMarker(element: BpmnElement, marker: string): void;
 }
@@ -176,6 +177,11 @@ export class BpmnModeler {
 
   zoomFit(): void {
     this.#canvas?.zoom('fit-viewport', 'auto');
+  }
+
+  /** Tells bpmn-js its container changed size; by itself it only notices window resizes. */
+  resized(): void {
+    this.#canvas?.resized();
   }
 
   get #canvas(): Canvas | undefined {

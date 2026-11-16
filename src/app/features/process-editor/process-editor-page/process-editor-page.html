@@ -17,10 +17,11 @@
       <app-bpmn-canvas class="min-h-0 flex-1" />
 
       @if (analysisOpen()) {
-        <section aria-label="Análisis" class="flex shrink-0 flex-col border-t border-border bg-surface p-4" [class.h-56]="!analysisExpanded()" [class.h-[60vh]]="analysisExpanded()">
+        <section aria-label="Análisis" class="relative flex shrink-0 flex-col border-t border-border bg-surface p-4" [style.height.px]="analysisHeight()">
+          <div role="separator" aria-orientation="horizontal" aria-label="Cambiar el alto del panel de análisis" tabindex="0" class="absolute inset-x-0 top-0 h-2 -translate-y-1/2 cursor-row-resize touch-none hover:bg-primary-soft focus-visible:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" [attr.aria-valuenow]="analysisHeight()" [attr.aria-valuemin]="minAnalysisHeight" [attr.aria-valuemax]="maxAnalysisHeight" (pointerdown)="startResize($event)" (pointermove)="dragResize($event)" (pointerup)="endResize()" (pointercancel)="endResize()" (keydown)="resizeWithKey($event)"></div>
           <div class="mb-2 flex items-center justify-between">
             <h2 class="text-sm font-semibold">Análisis</h2>
-            <button type="button" class="rounded-control border border-border px-3 py-1 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" [attr.aria-pressed]="analysisExpanded()" (click)="analysisExpanded.set(!analysisExpanded())">{{ analysisExpanded() ? 'Reducir panel' : 'Ampliar panel' }}</button>
+            <button type="button" class="rounded-control border border-border px-3 py-1 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" [attr.aria-pressed]="analysisExpanded()" (click)="toggleAnalysisSize()">{{ analysisExpanded() ? 'Reducir panel' : 'Ampliar panel' }}</button>
           </div>
           <app-analysis-tabs class="min-h-0 flex-1" />
         </section>
