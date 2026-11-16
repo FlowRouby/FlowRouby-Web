@@ -16,6 +16,7 @@
   --color-danger: var(--color-ruby-700);
   --color-warning: var(--color-amber-700);
   --color-info: var(--color-sky-700);
+  --color-path: var(--color-emerald-700);
 
   --radius-control: 0.5rem;
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
