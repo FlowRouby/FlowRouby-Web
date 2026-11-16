@@ -4,10 +4,18 @@ import { validateElementId } from '../models/element-id';
 import type { SelectedElement } from '../models/selected-element';
 
 const ZOOM_FACTOR = 1.2;
+export const FOCUS_MARKER = 'fr-focus';
 
 interface Canvas {
   zoom(): number;
   zoom(level: number | 'fit-viewport', center?: 'auto'): number;
+  addMarker(element: string, marker: string): void;
+  removeMarker(element: string, marker: string): void;
+  scrollToElement(element: BpmnElement): void;
+}
+
+interface ElementRegistry {
+  get(id: string): BpmnElement | undefined;
 }
 
 interface BpmnElement {
@@ -18,6 +26,7 @@ interface BpmnElement {
 
 interface Selection {
   get(): BpmnElement[];
+  select(element: BpmnElement): void;
 }
 
 interface Modeling {
@@ -31,6 +40,12 @@ interface Moddle {
 @Service()
 export class BpmnModeler {
   #modeler?: Modeler;
+  /** True while a whole diagram is being loaded, so that loading is not reported as a user edit. */
+  #loading = false;
+  readonly #editListeners = new Set<() => void>();
+  /** Markers this service added, so they can be removed without scanning the canvas. */
+  #markers = new Map<string, string>();
+  #focused?: string;
   readonly #selection = signal<SelectedElement | null>(null);
 
   /** The single selected element, or null when nothing or several elements are selected. */
@@ -39,7 +54,10 @@ export class BpmnModeler {
   async attach(container: HTMLElement): Promise<void> {
     this.#modeler = new Modeler({ container });
     this.#modeler.on(['selection.changed', 'elements.changed'], () => this.#syncSelection());
-    await this.#modeler.createDiagram();
+    this.#modeler.on('commandStack.changed', () => {
+      if (!this.#loading) this.#editListeners.forEach((listener) => listener());
+    });
+    await this.#loadDiagram(() => this.#modeler!.createDiagram());
     this.zoomFit();
   }
 
@@ -50,7 +68,7 @@ export class BpmnModeler {
   }
 
   async importXml(xml: string): Promise<void> {
-    await this.#modeler?.importXML(xml);
+    await this.#loadDiagram(() => this.#modeler?.importXML(xml));
     this.#syncSelection();
     this.zoomFit();
   }
@@ -84,6 +102,38 @@ export class BpmnModeler {
     return null;
   }
 
+  /** Calls `listener` whenever the user edits the diagram. Loading a diagram does not count as an edit. */
+  onEdited(listener: () => void): void {
+    this.#editListeners.add(listener);
+  }
+
+  hasElement(id: string): boolean {
+    return this.#element(id) !== undefined;
+  }
+
+  /** Replaces the markers set by the previous call. Ids missing from the canvas are skipped. */
+  applyMarkers(markers: ReadonlyMap<string, string>): void {
+    for (const [id, marker] of this.#markers) this.#removeMarker(id, marker);
+    this.#markers = new Map();
+    for (const [id, marker] of markers) {
+      if (!this.hasElement(id)) continue;
+      this.#canvas?.addMarker(id, marker);
+      this.#markers.set(id, marker);
+    }
+  }
+
+  /** Marks, selects and scrolls to the element. Returns false, touching nothing, when it is not on the canvas. */
+  focusElement(id: string): boolean {
+    const element = this.#element(id);
+    if (!element) return false;
+    this.#clearFocus();
+    this.#canvas?.addMarker(id, FOCUS_MARKER);
+    this.#focused = id;
+    this.#modeler?.get<Selection>('selection').select(element);
+    this.#canvas?.scrollToElement(element);
+    return true;
+  }
+
   zoomIn(): void {
     this.#zoomBy(ZOOM_FACTOR);
   }
@@ -98,6 +148,31 @@ export class BpmnModeler {
 
   get #canvas(): Canvas | undefined {
     return this.#modeler?.get<Canvas>('canvas');
+  }
+
+  /** Runs a load, hiding its command stack reset from edit listeners and dropping markers of the old diagram. */
+  async #loadDiagram(load: () => Promise<unknown> | undefined): Promise<void> {
+    this.#loading = true;
+    try {
+      await load();
+    } finally {
+      this.#loading = false;
+      this.#markers = new Map();
+      this.#focused = undefined;
+    }
+  }
+
+  #element(id: string): BpmnElement | undefined {
+    return this.#modeler?.get<ElementRegistry>('elementRegistry').get(id);
+  }
+
+  #removeMarker(id: string, marker: string): void {
+    if (this.hasElement(id)) this.#canvas?.removeMarker(id, marker);
+  }
+
+  #clearFocus(): void {
+    if (this.#focused !== undefined) this.#removeMarker(this.#focused, FOCUS_MARKER);
+    this.#focused = undefined;
   }
 
   #zoomBy(factor: number): void {
