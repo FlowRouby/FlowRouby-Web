@@ -58,6 +58,21 @@ describe('DiagnosticsPanel', () => {
     expect((await render()).text()).toContain('Aún no se ha cargado');
   });
 
+  it('offers to check a diagram drawn from scratch and sends the canvas through recheck', async () => {
+    status.set('idle');
+    const { root } = await render();
+    const button = [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Verificar diagrama');
+
+    button?.click();
+
+    expect(analysis.recheck).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not offer the check button once a result exists', async () => {
+    const { root } = await render();
+    expect([...root.querySelectorAll('button')].some((b) => b.textContent?.trim() === 'Verificar diagrama')).toBe(false);
+  });
+
   it('shows the empty state for a load without diagnostics', async () => {
     expect((await render()).text()).toContain('sin diagnósticos');
   });

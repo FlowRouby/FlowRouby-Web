@@ -95,6 +95,34 @@ and message catalog, 441), `ae5fbaf` (panel and wiring, 404):
   lines; receipt-driven development is off, so an independent verifier ran instead of a review.
 - T2 is three work units; planned as PR 2a/2b/2c stacked on PR 1 (not pushed yet).
 
-Open item for T3: a diagram drawn from scratch (no file loaded) has no way to be checked yet.
+Review findings on T2 (independent verifier): re-check race fixed in `27a4a68`. Left open: the
+import state is not reset when the canvas is destroyed and re-attached (single route today), the
+focus marker stays until the next focus or load, and the backend English `message` is a tooltip.
 
-Next: T3, after user confirmation.
+Pull requests (2026-11-16, user asked for them): #6 (2a, `feature/modeler-diagnostic-markers`),
+#7 (2b, `feature/import-analysis-state`), #8 (2c, `feature/import-diagnostics-panel`), each based
+on the previous one, #6 based on #5.
+
+User decision (2026-11-16): the application's own UI copy is Spanish (neutral); bpmn-js keeps its
+English strings. Done on branch `feature/spanish-ui-copy` (stacked on #8, not pushed): 64 changed
+lines, 97 tests pass.
+
+## Live shapes captured for T3 and T4 (2026-11-16)
+
+- `compile` 200: `metadata`, `validation`, `bpmn_node_ids` (`{ symbol: bpmnId }`), `data_contract`
+  (`required_inputs[]`, `produced_outputs[]`, `sample_payload`), `formal_analysis`
+  (`chomsky_classification`, `is_valid_workflow`, `regular_expression`, `nfa_state_count`, `dfa`
+  with `states`, `alphabet`, `start_state`, `accept_states`, `transitions`, `state_subsets`;
+  `flag_regions[]`, `acyclic_paths[][]`, `diagnostics` with `unreachable_nodes[]`, `deadlocks[]`,
+  `infinite_loops[]`, `valid_loops[]`), `flowspec` (`chomsky_classification`, `code`,
+  `symbol_table`), `generated_ruby` (`framework`, `files` as `{ path: content }`).
+- `compile?format=zip`: `application/zip`, `Content-Disposition: attachment; filename="loan_rails.zip"`.
+- `simulate` 200: `process_id`, `bpmn_node_ids`, `simulation` (`completed`, `terminated_reason`,
+  `accepted_by_dfa`, `visited_nodes[]`, `step_logs[]`, `http_requests_simulated[]`, `final_context`).
+- Mismatches reported to the user: `formal_analysis` has no ε-NFA structure, only
+  `nfa_state_count`; `bpmn_node_ids` is not in the contract; `simulate` without `input_data` took
+  the `amount < 1000` branch with an empty `final_context`.
+- Element shapes of `flag_regions`, `infinite_loops` and `valid_loops` were never observed
+  non-empty: keep them `unknown`.
+
+Next: T3 in progress on `feature/compile-analysis`. Route: delegated direct.
