@@ -1,0 +1,114 @@
+<section aria-label="Resumen" class="space-y-1">
+  <p class="font-medium" [class.text-danger]="!analysis().is_valid_workflow">
+    {{ analysis().is_valid_workflow ? 'Flujo de trabajo válido' : 'Flujo de trabajo inválido' }}
+  </p>
+  <p class="text-content-muted">Clasificación de Chomsky: <span class="font-medium text-content">{{ analysis().chomsky_classification }}</span></p>
+  <p class="text-content-muted">Estados del ε-NFA: <span class="font-medium text-content">{{ analysis().nfa_state_count }}</span>&ngsp;<span>(el servidor solo informa la cantidad de estados, no su estructura)</span></p>
+</section>
+
+<section aria-label="Expresión regular">
+  <h3 class="mb-1 font-semibold">Expresión regular</h3>
+  <p class="overflow-x-auto rounded-control border border-border bg-surface-muted px-3 py-2 font-mono text-xs whitespace-pre-wrap">{{ analysis().regular_expression }}</p>
+</section>
+
+<section aria-label="DFA">
+  <h3 class="mb-1 font-semibold">Autómata finito determinista (DFA)</h3>
+  <p class="mb-2 text-content-muted">
+    Estado inicial: <span class="font-mono text-content">{{ dfa().start_state }}</span> ·
+    Estados de aceptación:
+    @if (dfa().accept_states.length === 0) {
+      <span class="text-content">ninguno</span>
+    } @else {
+      <span class="font-mono text-content">{{ dfa().accept_states.join(', ') }}</span>
+    }
+  </p>
+  <div class="overflow-x-auto">
+    <table aria-label="Tabla de transiciones del DFA" class="text-left">
+      <thead class="text-content-muted">
+        <tr>
+          <th scope="col" class="px-2 py-1 font-medium">Estado</th>
+          @for (symbol of dfa().alphabet; track symbol) {
+            <th scope="col" class="px-2 py-1 font-normal"><app-node-ref [symbol]="symbol" /></th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (state of dfa().states; track state) {
+          <tr class="border-t border-border">
+            <th scope="row" class="px-2 py-1 font-mono font-normal">
+              {{ state }}
+              @if (isStart(state)) { <span class="font-sans text-xs text-content-muted">(inicial)</span> }
+              @if (isAccept(state)) { <span class="font-sans text-xs text-content-muted">(aceptación)</span> }
+            </th>
+            @for (symbol of dfa().alphabet; track symbol) {
+              <td class="px-2 py-1 font-mono">{{ target(state, symbol) }}</td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-label="Caminos acíclicos">
+  <h3 class="mb-1 font-semibold">Caminos acíclicos</h3>
+  @if (analysis().acyclic_paths.length === 0) {
+    <p class="text-content-muted">No se encontró ningún camino.</p>
+  } @else {
+    <ol class="space-y-1">
+      @for (path of analysis().acyclic_paths; track $index) {
+        <li>
+          @for (symbol of path; track $index) {
+            @if (!$first) { <span aria-hidden="true"> → </span> }
+            <app-node-ref [symbol]="symbol" />
+          }
+        </li>
+      }
+    </ol>
+  }
+</section>
+
+<section aria-label="Nodos inalcanzables">
+  <h3 class="mb-1 font-semibold">Nodos inalcanzables</h3>
+  @if (analysis().diagnostics.unreachable_nodes.length === 0) {
+    <p class="text-content-muted">Todos los nodos son alcanzables.</p>
+  } @else {
+    <ul class="flex flex-wrap gap-1">
+      @for (symbol of analysis().diagnostics.unreachable_nodes; track symbol) {
+        <li><app-node-ref [symbol]="symbol" /></li>
+      }
+    </ul>
+  }
+</section>
+
+<section aria-label="Bloqueos">
+  <h3 class="mb-1 font-semibold">Bloqueos</h3>
+  @if (analysis().diagnostics.deadlocks.length === 0) {
+    <p class="text-content-muted">No se detectaron bloqueos.</p>
+  } @else {
+    <ul class="space-y-1">
+      @for (deadlock of analysis().diagnostics.deadlocks; track $index) {
+        <li class="rounded-control border border-border px-3 py-2">
+          <span class="font-medium">{{ labelOf(deadlock.type) }}</span>
+          @if (deadlock.node_id) { <span> · <app-node-ref [symbol]="deadlock.node_id" /></span> }
+          @if (deadlock.dfa_state) { <span> · estado <span class="font-mono">{{ deadlock.dfa_state }}</span></span> }
+          <span class="mt-1 block text-xs text-content-muted">{{ deadlock.message }}</span>
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+@for (finding of unknownFindings(); track finding.title) {
+  <section [attr.aria-label]="finding.title">
+    <h3 class="mb-1 font-semibold">{{ finding.title }} ({{ finding.items.length }})</h3>
+    <pre class="overflow-x-auto rounded-control border border-border bg-surface-muted p-2 font-mono text-xs">{{ json(finding.items) }}</pre>
+  </section>
+}
+
+@if (diagnostics().length > 0) {
+  <section aria-label="Diagnósticos de la compilación">
+    <h3 class="mb-1 font-semibold">Diagnósticos de la compilación</h3>
+    <app-diagnostic-list [diagnostics]="diagnostics()" />
+  </section>
+}

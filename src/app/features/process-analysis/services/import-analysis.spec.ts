@@ -23,7 +23,8 @@ const ok = (supported: boolean, diagnostics: Diagnostic[] = []) =>
 
 describe('ImportAnalysis', () => {
   let edited: () => void;
-  const modeler = { onEdited: vi.fn(), applyMarkers: vi.fn(), exportXml: vi.fn() };
+  let loadStarted: () => void;
+  const modeler = { onEdited: vi.fn(), onLoad: vi.fn(), applyMarkers: vi.fn(), exportXml: vi.fn() };
   const api = { importProcess: vi.fn() };
   let analysis: ImportAnalysis;
   const file = new File(['<x/>'], 'a.bpmn');
@@ -31,6 +32,7 @@ describe('ImportAnalysis', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     modeler.onEdited.mockImplementation((listener: () => void) => (edited = listener));
+    modeler.onLoad.mockImplementation((listener: () => void) => (loadStarted = listener));
     TestBed.configureTestingModule({
       providers: [
         { provide: BpmnModeler, useValue: modeler },
@@ -50,6 +52,68 @@ describe('ImportAnalysis', () => {
     stream.next(value);
     stream.complete();
   };
+
+  describe('when a diagram load starts', () => {
+    it('resets synchronously to idle, before any new check begins', async () => {
+      const first = start();
+      respond(first.stream, ok(true, [diagnostic('warning', 'Sub')]));
+      await first.done;
+      edited();
+
+      loadStarted();
+
+      expect(analysis.status()).toBe('idle');
+      expect(analysis.diagnostics()).toEqual([]);
+      expect(analysis.failure()).toBeNull();
+      expect(analysis.stale()).toBe(false);
+      expect(analysis.supported()).toBe(false);
+      expect(modeler.applyMarkers).toHaveBeenLastCalledWith(new Map());
+    });
+
+    it('drops a failure too', async () => {
+      const { stream, done } = start();
+      stream.error({ kind: 'network', status: 0 });
+      await done;
+
+      loadStarted();
+
+      expect(analysis.failure()).toBeNull();
+      expect(analysis.status()).toBe('idle');
+    });
+
+    it('ignores a response that arrives after the load started', async () => {
+      const { stream, done } = start();
+
+      loadStarted();
+      respond(stream, ok(true, [diagnostic('warning', 'Sub')]));
+      await done;
+
+      expect(analysis.status()).toBe('idle');
+      expect(analysis.diagnostics()).toEqual([]);
+      expect(analysis.supported()).toBe(false);
+    });
+
+    it('ignores an error that arrives after the load started', async () => {
+      const { stream, done } = start();
+
+      loadStarted();
+      stream.error({ kind: 'network', status: 0 });
+      await done;
+
+      expect(analysis.status()).toBe('idle');
+      expect(analysis.failure()).toBeNull();
+    });
+
+    it('lets the check that follows the load work as usual', async () => {
+      loadStarted();
+      const { stream, done } = start();
+      respond(stream, ok(true));
+      await done;
+
+      expect(analysis.status()).toBe('loaded');
+      expect(analysis.supported()).toBe(true);
+    });
+  });
 
   it('starts idle and unsupported', () => {
     expect(analysis.status()).toBe('idle');

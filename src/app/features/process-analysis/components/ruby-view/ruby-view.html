@@ -1,0 +1,23 @@
+<p class="mb-2 text-content-muted">Framework: <span class="font-medium text-content">{{ ruby().framework }}</span> · {{ paths().length }} archivos</p>
+
+@if (selected() === null) {
+  <p class="text-content-muted">No se generó ningún archivo.</p>
+} @else {
+  <div class="flex min-h-40 min-w-0 flex-1 gap-3">
+    <ul aria-label="Archivos generados" class="min-h-0 w-64 shrink-0 space-y-0.5 overflow-y-auto">
+      @for (path of paths(); track path) {
+        <li>
+          <button type="button" class="w-full rounded-control px-2 py-0.5 text-left font-mono text-xs hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring aria-[current=true]:bg-primary-soft aria-[current=true]:font-semibold" [attr.aria-current]="path === selected()" (click)="choose(path)">{{ path }}</button>
+        </li>
+      }
+    </ul>
+    <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+      <p class="mb-1 font-mono text-xs text-content-muted">{{ selected() }}</p>
+      @if (content() === '') {
+        <p class="text-content-muted">Archivo vacío.</p>
+      } @else {
+        <pre aria-label="Contenido del archivo" class="min-h-0 flex-1 overflow-auto rounded-control border border-border bg-surface-muted p-3 font-mono text-xs whitespace-pre" tabindex="0">{{ content() }}</pre>
+      }
+    </div>
+  </div>
+}

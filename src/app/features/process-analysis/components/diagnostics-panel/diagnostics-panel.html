@@ -8,7 +8,8 @@
 
   @switch (status()) {
     @case ('idle') {
-      <p class="text-content-muted">Aún no se ha cargado ningún archivo para analizar.</p>
+      <p class="text-content-muted">Aún no se ha cargado ningún archivo para analizar. También puede verificar el diagrama dibujado en el lienzo.</p>
+      <button type="button" class="rounded-control border border-border px-3 py-1 hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="recheck()">Verificar diagrama</button>
     }
     @case ('loading') {
       <p role="status" class="text-content-muted">Analizando el diagrama…</p>

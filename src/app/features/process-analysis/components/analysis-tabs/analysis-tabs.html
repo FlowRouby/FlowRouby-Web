@@ -1,0 +1,79 @@
+<div class="flex flex-wrap items-center justify-between gap-2">
+  <div role="tablist" aria-label="Vistas del análisis" class="flex gap-1" (keydown)="onKey($event)">
+    @for (tab of tabs; track tab.id) {
+      <button type="button" role="tab" [id]="'analysis-tab-' + tab.id" [attr.aria-selected]="active() === tab.id" [attr.aria-controls]="active() === tab.id ? 'analysis-panel-' + tab.id : null" [attr.tabindex]="active() === tab.id ? 0 : -1" class="rounded-control border border-transparent px-3 py-1 text-sm hover:bg-primary-soft aria-selected:border-border aria-selected:bg-primary-soft aria-selected:font-semibold aria-selected:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="select(tab.id)">{{ tab.label }}</button>
+    }
+  </div>
+
+  <div class="flex items-center gap-2 text-sm">
+    @if (reason(); as why) {
+      <span id="analysis-actions-reason" class="text-content-muted">{{ why }}</span>
+    }
+    <button type="button" class="rounded-control border border-border px-3 py-1 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-focus-ring" [disabled]="!canCompile()" [attr.aria-describedby]="reason() ? 'analysis-actions-reason' : null" (click)="compile()">{{ compileStatus() === 'loading' ? 'Compilando…' : 'Compilar' }}</button>
+    <button type="button" class="rounded-control border border-border px-3 py-1 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-focus-ring" [disabled]="!canDownload()" [attr.aria-describedby]="reason() ? 'analysis-actions-reason' : null" (click)="download()">{{ downloading() ? 'Descargando…' : 'Descargar ZIP' }}</button>
+  </div>
+</div>
+
+@if (downloadNotice(); as notice) {
+  <p role="alert" class="rounded-control border border-border bg-surface-muted px-3 py-2 text-sm">{{ notice }}</p>
+}
+
+@for (tab of tabs; track tab.id) {
+  @if (active() === tab.id) {
+    <div role="tabpanel" [id]="'analysis-panel-' + tab.id" [attr.aria-labelledby]="'analysis-tab-' + tab.id" tabindex="0" class="min-h-0 flex-1 overflow-y-auto" [class.flex]="tab.id === 'ruby'" [class.flex-col]="tab.id === 'ruby'">
+      @switch (tab.id) {
+        @case ('diagnostics') {
+          <app-diagnostics-panel />
+        }
+        @default {
+          @if (result(); as compiled) {
+            @switch (tab.id) {
+              @case ('flowspec') {
+                <app-flowspec-view [flowspec]="compiled.flowspec" />
+              }
+              @case ('formal') {
+                <app-formal-analysis-view [result]="compiled" />
+              }
+              @case ('ruby') {
+                <app-ruby-view [ruby]="compiled.generated_ruby" />
+              }
+            }
+          } @else {
+            <ng-container [ngTemplateOutlet]="placeholder" />
+          }
+        }
+      }
+    </div>
+  }
+}
+
+<ng-template #placeholder>
+  <div class="space-y-2 text-sm">
+    @switch (compileStatus()) {
+      @case ('loading') {
+        <p role="status" class="text-content-muted">Compilando el diagrama…</p>
+      }
+      @case ('failed') {
+        @if (failureView(); as failure) {
+          <p role="alert" class="rounded-control border border-border bg-surface-muted px-3 py-2">{{ failure.notice }}</p>
+          @if (failure.line !== null || failure.column !== null) {
+            <p class="text-content-muted">
+              Posición del error:
+              @if (failure.line !== null) { línea {{ failure.line }} }
+              @if (failure.column !== null) { columna {{ failure.column }} }
+            </p>
+          }
+          @if (failure.diagnostics.length > 0) {
+            <app-diagnostic-list [diagnostics]="failure.diagnostics" />
+          }
+          @if (failure.code !== null) {
+            <pre aria-label="FlowSpec generado" class="overflow-x-auto rounded-control border border-border bg-surface-muted p-3 font-mono text-xs whitespace-pre" tabindex="0">{{ failure.code }}</pre>
+          }
+        }
+      }
+      @default {
+        <p class="text-content-muted">Compile el diagrama para ver este resultado.</p>
+      }
+    }
+  </div>
+</ng-template>

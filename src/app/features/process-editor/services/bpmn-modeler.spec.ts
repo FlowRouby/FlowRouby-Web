@@ -52,6 +52,16 @@ describe('BpmnModeler', () => {
     expect(service).toBeTruthy();
   });
 
+  it('notifies load listeners synchronously when an attach starts, before the diagram exists', () => {
+    const listener = vi.fn();
+    service.onLoad(listener);
+
+    const attaching = service.attach(document.createElement('div'));
+
+    expect(listener).toHaveBeenCalledTimes(1);
+    return attaching;
+  });
+
   describe('with an attached diagram', () => {
     beforeEach(async () => {
       addElement('Task_1');
@@ -114,6 +124,17 @@ describe('BpmnModeler', () => {
       expect(fake.canvas.addMarker).not.toHaveBeenCalled();
       expect(fake.selection.select).not.toHaveBeenCalled();
       expect(fake.canvas.scrollToElement).not.toHaveBeenCalled();
+    });
+
+    it('notifies load listeners synchronously when an import starts', async () => {
+      const listener = vi.fn();
+      service.onLoad(listener);
+
+      const importing = service.importXml('<definitions/>');
+
+      expect(listener).toHaveBeenCalledTimes(1);
+      await importing;
+      expect(listener).toHaveBeenCalledTimes(1);
     });
 
     it('notifies edit listeners on a command stack change, but not while a diagram loads', async () => {
