@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import type { ApiError } from '../models/api-error';
 import type { ImportResult } from '../models/import-result';
 import { XOR_RESULT } from '../testing/compile-fixtures';
+import { INVALID_INPUT_DATA_BODY, SIMULATION_WITH_INPUT } from '../testing/simulation-fixtures';
 import { ProcessApi } from './process-api';
 
 const URL = `${environment.apiUrl}/api/v1/processes/import`;
@@ -115,6 +116,54 @@ describe('ProcessApi', () => {
       );
 
       expect(error).toMatchObject({ kind: 'message', detail: { line: 4, column: 2 } });
+    });
+  });
+
+  describe('simulate', () => {
+    const SIMULATE_URL = `${environment.apiUrl}/api/v1/processes/simulate`;
+
+    it('posts only the file when there is no input_data and returns the typed 200', () => {
+      let received: unknown;
+      api.simulate(file()).subscribe((value) => (received = value));
+
+      const request = http.expectOne(SIMULATE_URL);
+      expect(request.request.method).toBe('POST');
+      const body = request.request.body as FormData;
+      expect(body.getAll('file')).toHaveLength(1);
+      expect(body.has('input_data')).toBe(false);
+      request.flush(SIMULATION_WITH_INPUT);
+
+      expect(received).toEqual(SIMULATION_WITH_INPUT);
+    });
+
+    it('sends input_data as a form field string when provided', () => {
+      api.simulate(file(), '{"amount": 500}').subscribe();
+
+      const body = http.expectOne(SIMULATE_URL).request.body as FormData;
+      expect(body.get('input_data')).toBe('{"amount": 500}');
+      expect(body.getAll('file')).toHaveLength(1);
+    });
+
+    it('normalizes the 422 of an invalid input_data as a message error', () => {
+      let error: ApiError | undefined;
+      api.simulate(file(), '[1]').subscribe({ error: (e: ApiError) => (error = e) });
+
+      http.expectOne(SIMULATE_URL).flush(INVALID_INPUT_DATA_BODY, { status: 422, statusText: 'Unprocessable Entity' });
+
+      expect(error).toMatchObject({ kind: 'message', status: 422 });
+    });
+
+    it('normalizes a 422 with diagnostics and a network failure', () => {
+      const errors: ApiError[] = [];
+      api.simulate(file()).subscribe({ error: (e: ApiError) => errors.push(e) });
+      http.expectOne(SIMULATE_URL).flush(
+        { detail: { message: 'x', diagnostics: [{ code: 'NO_END_EVENT' }] } },
+        { status: 422, statusText: 'Unprocessable Entity' },
+      );
+      api.simulate(file()).subscribe({ error: (e: ApiError) => errors.push(e) });
+      http.expectOne(SIMULATE_URL).error(new ProgressEvent('error'));
+
+      expect(errors.map((e) => e.kind)).toEqual(['diagnostics', 'network']);
     });
   });
 

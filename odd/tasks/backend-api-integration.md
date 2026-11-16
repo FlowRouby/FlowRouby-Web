@@ -49,7 +49,7 @@ already exposes `/import`, `/compile` and `/simulate`.
   and `line`.
 - [x] T3 — `supported` gates compile/simulate; compile view (FlowSpec, formal analysis, Ruby files)
   and ZIP download.
-- [ ] T4 — Simulate with `input_data` and highlight the traversed path through `bpmn_node_ids`.
+- [x] T4 — Simulate with `input_data` and highlight the traversed path through `bpmn_node_ids`.
 
 ## Acceptance criteria
 
@@ -142,4 +142,55 @@ not pushed), route delegated direct:
 - Reusable for T4: `toCanvasId`/`toCanvasIds` (`process-analysis/models/symbol-nodes.ts`),
   `app-node-ref`, `CompileAnalysis`, `ProcessApi`.
 
-Next: T4 (simulate with `input_data`, highlight the path), after user confirmation.
+Delivery change (2026-11-16): #6, #7 and #8 were merged into their stacked base branches, so only
+T1 reached `develop`. From now on every pull request targets `develop` directly, opened in merge
+order: #9 (`feature/spanish-ui-copy`: T2 content again plus the Spanish copy) and #10
+(`feature/compile-analysis`: T3, built on #9).
+
+Pending decision (user, 2026-11-16: "note it, we look tomorrow at whether to expand it"): the
+ε-NFA. `compile` returns only `nfa_state_count`; showing its states and transitions needs the
+backend to add that structure to `formal_analysis`. Nothing to do in the frontend until decided.
+
+Requested by the user for the project, not possible today (2026-11-16): type a route (a string of
+nodes) and validate it against the automaton inferred from the model, painting it on the diagram.
+The backend has no endpoint for it; the user will add it to the backend. `simulate` only reports
+`accepted_by_dfa` for the route the engine itself took.
+
+T4 evidence (2026-11-16), branch `feature/simulate-path` (built on `feature/compile-analysis`),
+route delegated direct:
+
+- `4491f85` simulate API, `b74e204` modeler marker groups, `e16878e` simulation state and path,
+  `8a0cde3` simulation tab.
+- `pnpm test --watch=false`: 25 files / 299 tests passed, six consecutive runs; `pnpm build` succeeded.
+- Flaky suite found and fixed: `bpmn-modeler.spec.ts` mocked `bpmn-js/lib/Modeler` with `vi.mock`,
+  which does not apply when another spec already loaded the module in the same worker. bpmn-js is
+  now created through the `BPMN_MODELER_FACTORY` token and the spec provides a fake.
+- Live end-to-end browser check against the backend (this also closes the T3 pending item):
+  import 200, compile 200, ZIP saved as `loan_rails.zip`, simulate 200 twice. `{"amount": 500}`
+  marks Start, Review, Decide, Notify, EndOk and flows f1, f2, f3, f5; `{"amount": 5000}` marks the
+  Reject branch (f4, f6, EndNo); `[1]` is rejected on the client without a request; "Limpiar ruta"
+  removes every path marker.
+- Independent verifier: nothing blocking. Fixed: markers are now tracked by element reference, so
+  renaming the id of a marked element no longer leaves a stale marker (checked live: path cleared
+  after renaming `Review`). 300 tests pass, three consecutive runs.
+- Pull request: `feature/simulate-path` → `develop`, built on #10.
+
+## Merge order for the open pull requests
+
+1. #9 — import diagnostics and Spanish copy.
+2. #10 — compile view, formal analysis and ZIP.
+3. The simulation PR (`feature/simulate-path`).
+
+All three target `develop`. Each later one shows the commits of the earlier ones until those are
+merged; merging in this order needs no retargeting.
+
+## Follow-ups (not started)
+
+- Backend: return the ε-NFA structure in `formal_analysis` (user decides whether to expand it).
+- Backend: endpoint to validate a typed route against the inferred automaton; then a frontend
+  input to type the route and paint it.
+- Frontend, minor: focus marker stays until the next focus or load; backend English `message` is
+  shown as a tooltip on diagnostics.
+
+- Known cosmetic limits: the arrowhead of a traversed flow keeps its color (shared SVG marker), and
+  the collapsed analysis panel is tight for the simulation tab.

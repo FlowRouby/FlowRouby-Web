@@ -1,16 +1,18 @@
-import { Service, signal } from '@angular/core';
+import { inject, InjectionToken, Service, signal } from '@angular/core';
 import Modeler from 'bpmn-js/lib/Modeler';
 import { validateElementId } from '../models/element-id';
 import type { SelectedElement } from '../models/selected-element';
 
 const ZOOM_FACTOR = 1.2;
 export const FOCUS_MARKER = 'fr-focus';
+/** Marker group used when the caller does not name one (the diagnostics). */
+export const DEFAULT_MARKER_GROUP = 'diagnostics';
 
 interface Canvas {
   zoom(): number;
   zoom(level: number | 'fit-viewport', center?: 'auto'): number;
-  addMarker(element: string, marker: string): void;
-  removeMarker(element: string, marker: string): void;
+  addMarker(element: BpmnElement, marker: string): void;
+  removeMarker(element: BpmnElement, marker: string): void;
   scrollToElement(element: BpmnElement): void;
 }
 
@@ -22,6 +24,8 @@ interface BpmnElement {
   id: string;
   type: string;
   businessObject: { name?: string };
+  /** Connections leaving a shape (absent on connections). */
+  outgoing?: { id: string; target?: { id: string } }[];
 }
 
 interface Selection {
@@ -37,23 +41,30 @@ interface Moddle {
   ids: { assigned(id: string): unknown };
 }
 
+/** Creates the bpmn-js modeler. A token, so tests can replace bpmn-js without relying on module mocking. */
+export const BPMN_MODELER_FACTORY = new InjectionToken<(container: HTMLElement) => Modeler>(
+  'BPMN_MODELER_FACTORY',
+  { factory: () => (container) => new Modeler({ container }) },
+);
+
 @Service()
 export class BpmnModeler {
+  readonly #createModeler = inject(BPMN_MODELER_FACTORY);
   #modeler?: Modeler;
   /** True while a whole diagram is being loaded, so that loading is not reported as a user edit. */
   #loading = false;
   readonly #editListeners = new Set<() => void>();
   readonly #loadListeners = new Set<() => void>();
-  /** Markers this service added, so they can be removed without scanning the canvas. */
-  #markers = new Map<string, string>();
-  #focused?: string;
+  /** Markers this service added per group, so they can be removed without scanning the canvas. */
+  #markers = new Map<string, Map<BpmnElement, string>>();
+  #focused?: BpmnElement;
   readonly #selection = signal<SelectedElement | null>(null);
 
   /** The single selected element, or null when nothing or several elements are selected. */
   readonly selection = this.#selection.asReadonly();
 
   async attach(container: HTMLElement): Promise<void> {
-    this.#modeler = new Modeler({ container });
+    this.#modeler = this.#createModeler(container);
     this.#modeler.on(['selection.changed', 'elements.changed'], () => this.#syncSelection());
     this.#modeler.on('commandStack.changed', () => {
       if (!this.#loading) this.#editListeners.forEach((listener) => listener());
@@ -120,15 +131,26 @@ export class BpmnModeler {
     return this.#element(id) !== undefined;
   }
 
-  /** Replaces the markers set by the previous call. Ids missing from the canvas are skipped. */
-  applyMarkers(markers: ReadonlyMap<string, string>): void {
-    for (const [id, marker] of this.#markers) this.#removeMarker(id, marker);
-    this.#markers = new Map();
+  /**
+   * Replaces the markers of `group` (the previous call for that group). Other groups are left untouched, so
+   * independent features can mark the canvas without clobbering each other. Ids missing from the canvas are skipped.
+   */
+  applyMarkers(markers: ReadonlyMap<string, string>, group: string = DEFAULT_MARKER_GROUP): void {
+    for (const [element, marker] of this.#markers.get(group) ?? []) this.#canvas?.removeMarker(element, marker);
+    const applied = new Map<BpmnElement, string>();
     for (const [id, marker] of markers) {
-      if (!this.hasElement(id)) continue;
-      this.#canvas?.addMarker(id, marker);
-      this.#markers.set(id, marker);
+      const element = this.#element(id);
+      if (!element) continue;
+      this.#canvas?.addMarker(element, marker);
+      applied.set(element, marker);
     }
+    this.#markers.set(group, applied);
+  }
+
+  /** Id of a connection going from `sourceId` to `targetId`, or null when there is none (or an id is unknown). */
+  connectionBetween(sourceId: string, targetId: string): string | null {
+    const outgoing = this.#element(sourceId)?.outgoing ?? [];
+    return outgoing.find((connection) => connection.target?.id === targetId)?.id ?? null;
   }
 
   /** Marks, selects and scrolls to the element. Returns false, touching nothing, when it is not on the canvas. */
@@ -136,8 +158,8 @@ export class BpmnModeler {
     const element = this.#element(id);
     if (!element) return false;
     this.#clearFocus();
-    this.#canvas?.addMarker(id, FOCUS_MARKER);
-    this.#focused = id;
+    this.#canvas?.addMarker(element, FOCUS_MARKER);
+    this.#focused = element;
     this.#modeler?.get<Selection>('selection').select(element);
     this.#canvas?.scrollToElement(element);
     return true;
@@ -176,12 +198,8 @@ export class BpmnModeler {
     return this.#modeler?.get<ElementRegistry>('elementRegistry').get(id);
   }
 
-  #removeMarker(id: string, marker: string): void {
-    if (this.hasElement(id)) this.#canvas?.removeMarker(id, marker);
-  }
-
   #clearFocus(): void {
-    if (this.#focused !== undefined) this.#removeMarker(this.#focused, FOCUS_MARKER);
+    if (this.#focused !== undefined) this.#canvas?.removeMarker(this.#focused, FOCUS_MARKER);
     this.#focused = undefined;
   }
 

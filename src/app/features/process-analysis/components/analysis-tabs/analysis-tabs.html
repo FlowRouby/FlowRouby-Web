@@ -25,6 +25,9 @@
         @case ('diagnostics') {
           <app-diagnostics-panel />
         }
+        @case ('simulation') {
+          <app-simulation-view />
+        }
         @default {
           @if (result(); as compiled) {
             @switch (tab.id) {

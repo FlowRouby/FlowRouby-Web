@@ -14,6 +14,23 @@ body {
   outline: none;
 }
 
+/* Simulated route. Declared before the diagnostic markers so an element that is also flagged keeps its diagnostic color.
+   Not color alone: route shapes get a thicker stroke and a light fill, route connections a thicker line.
+   The arrowhead is a shared svg marker that bpmn-js paints itself, so it keeps its color. */
+.djs-shape.fr-path > .djs-visual > :first-child {
+  stroke: var(--color-path) !important;
+  stroke-width: 4px !important;
+}
+.djs-shape.fr-path > .djs-visual > rect:first-child,
+.djs-shape.fr-path > .djs-visual > circle:first-child,
+.djs-shape.fr-path > .djs-visual > polygon:first-child {
+  fill: color-mix(in srgb, var(--color-path) 12%, white) !important;
+}
+.djs-connection.fr-path > .djs-visual > path {
+  stroke: var(--color-path) !important;
+  stroke-width: 4px !important;
+}
+
 /* Diagnostic markers. bpmn-js adds these classes to the SVG group of an element, outside any component's styles.
    bpmn-js paints shapes with inline styles, so these rules need !important to apply. */
 .djs-element.fr-error > .djs-visual > :first-child {

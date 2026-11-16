@@ -3,7 +3,11 @@ import { BpmnModeler } from '../../../process-editor/services/bpmn-modeler';
 import { toCanvasId } from '../../models/symbol-nodes';
 import { CompileAnalysis } from '../../services/compile-analysis';
 
-/** A node symbol of the current compile result, with its BPMN id; a button when the element is on the canvas. */
+/**
+ * A node symbol with its BPMN id; a button when the element is on the canvas. By default the symbol belongs to the
+ * current compile result; pass `nodeIds` (the `bpmn_node_ids` of the response the symbol came from, or null when
+ * there is none) for symbols of another response, such as a simulation.
+ */
 @Component({
   selector: 'app-node-ref',
   template: `
@@ -20,15 +24,20 @@ export class NodeRef {
   readonly #modeler = inject(BpmnModeler);
 
   readonly symbol = input.required<string>();
+  /** `undefined` (the default) uses the compile result; `null` means the response had no mapping. */
+  readonly nodeIds = input<Readonly<Record<string, string>> | null | undefined>(undefined);
 
-  protected readonly label = computed(() => {
-    const id = this.#compile.bpmnIdOf(this.symbol());
-    return id === null ? this.symbol() : `${this.symbol()} · ${id}`;
+  readonly #ids = computed(() => {
+    const given = this.nodeIds();
+    return given === undefined ? (this.#compile.result()?.bpmn_node_ids ?? null) : given;
   });
 
-  protected readonly canvasId = computed(() =>
-    toCanvasId(this.symbol(), this.#compile.result()?.bpmn_node_ids ?? null, (id) => this.#modeler.hasElement(id)),
-  );
+  protected readonly label = computed(() => {
+    const ids = this.#ids();
+    return ids && Object.hasOwn(ids, this.symbol()) ? `${this.symbol()} · ${ids[this.symbol()]}` : this.symbol();
+  });
+
+  protected readonly canvasId = computed(() => toCanvasId(this.symbol(), this.#ids(), (id) => this.#modeler.hasElement(id)));
 
   protected focus(id: string): void {
     this.#modeler.focusElement(id);

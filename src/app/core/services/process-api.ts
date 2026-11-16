@@ -5,6 +5,7 @@ import { environment } from '../../../environments/environment';
 import { toApiError } from '../models/api-error';
 import type { CompileResult, ProjectArchive } from '../models/compile-result';
 import type { ImportResult } from '../models/import-result';
+import type { SimulationResult } from '../models/simulation-result';
 
 const DEFAULT_ARCHIVE_NAME = 'project.zip';
 
@@ -48,6 +49,15 @@ export class ProcessApi {
   compile(file: File): Observable<CompileResult> {
     return this.#http
       .post<CompileResult>(`${environment.apiUrl}/api/v1/processes/compile`, this.#form(file))
+      .pipe(catchError((error: HttpErrorResponse) => throwError(() => toApiError(error))));
+  }
+
+  /** Simulates a route of a BPMN file. `inputData` is a JSON string sent only when provided. Failures are emitted as an `ApiError`. */
+  simulate(file: File, inputData?: string): Observable<SimulationResult> {
+    const body = this.#form(file);
+    if (inputData !== undefined) body.append('input_data', inputData);
+    return this.#http
+      .post<SimulationResult>(`${environment.apiUrl}/api/v1/processes/simulate`, body)
       .pipe(catchError((error: HttpErrorResponse) => throwError(() => toApiError(error))));
   }
 
