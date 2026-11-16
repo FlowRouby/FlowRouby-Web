@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { CompileResult } from '../../../../core/models/compile-result';
-import { LOOP_RESULT, XOR_RESULT } from '../../../../core/testing/compile-fixtures';
+import { LOOP_RESULT, VALID_LOOP_RESULT, XOR_RESULT } from '../../../../core/testing/compile-fixtures';
 import { BpmnModeler } from '../../../process-editor/services/bpmn-modeler';
 import { CompileAnalysis } from '../../services/compile-analysis';
 import { FormalAnalysisView } from './formal-analysis-view';
@@ -142,10 +142,48 @@ describe('FormalAnalysisView', () => {
     expect((await render(XOR_RESULT)).root.querySelectorAll('pre')).toHaveLength(0);
 
     const result = structuredClone(XOR_RESULT);
-    result.formal_analysis.diagnostics.infinite_loops = [{ nodes: ['a'] }];
+    result.formal_analysis.flag_regions = [{ nodes: ['a'] }];
     const { root } = await render(result);
-    expect(root.querySelector('section[aria-label="Ciclos infinitos"] pre')?.textContent).toBe('[{"nodes":["a"]}]');
-    expect(root.querySelector('section[aria-label="Ciclos válidos"]')).toBeNull();
+    expect(root.querySelector('section[aria-label="Regiones con banderas"] pre')?.textContent).toBe('[{"nodes":["a"]}]');
+    expect(root.querySelector('section[aria-label="Ciclos"]')).toBeNull();
+  });
+
+  it('shows no loops section when there are no loop findings', async () => {
+    expect((await render(XOR_RESULT)).root.querySelector('section[aria-label="Ciclos"]')).toBeNull();
+  });
+
+  it('shows a valid loop with its label, states as a set, linked activities and the backend message', async () => {
+    const { root, text } = await render(VALID_LOOP_RESULT);
+    const section = root.querySelector('section[aria-label="Ciclos"]') as HTMLElement;
+    const item = section.querySelector('li') as HTMLElement;
+    const itemText = item.textContent?.replace(/\s+/g, ' ').trim();
+
+    expect(section.querySelectorAll('li')).toHaveLength(1);
+    expect(itemText).toContain('Ciclo controlado, con salida hacia un evento de fin');
+    expect(itemText).toContain('estados {D2, D4}');
+    expect(itemText).toContain('actividades task_1 · Task_Revisar, task_2 · Task_Corregir');
+    expect(itemText).not.toContain('→');
+    expect(itemText).toContain('Controlled loop with valid exit path towards an EndEvent.');
+    expect(item.querySelectorAll('app-node-ref')).toHaveLength(2);
+    expect(item.querySelector('.text-danger')).toBeNull();
+    expect(root.querySelector('pre')).toBeNull();
+    expect(text()).toContain('Ciclos (1)');
+  });
+
+  it('lists infinite loops first, with the danger colour, and labels unknown types generically', async () => {
+    const result = structuredClone(VALID_LOOP_RESULT);
+    const valid = result.formal_analysis.diagnostics.valid_loops[0];
+    result.formal_analysis.diagnostics.infinite_loops = [{ ...valid, type: 'INFINITE_LOOP_TRAP', message: 'trap' }];
+    result.formal_analysis.diagnostics.valid_loops = [valid, { ...valid, type: 'NEW_KIND' }];
+    const { root } = await render(result);
+    const items = [...root.querySelectorAll('section[aria-label="Ciclos"] li')];
+
+    expect(items).toHaveLength(3);
+    expect(items[0].textContent).toContain('Ciclo sin salida');
+    expect(items[0].querySelector('.text-danger')?.textContent).toContain('Ciclo sin salida');
+    expect(items[1].textContent).toContain('Ciclo controlado');
+    expect(items[2].textContent).toContain('Ciclo detectado');
+    expect(items[2].querySelector('.text-danger')).toBeNull();
   });
 
   it('shows compile diagnostics translated by code, only when present', async () => {

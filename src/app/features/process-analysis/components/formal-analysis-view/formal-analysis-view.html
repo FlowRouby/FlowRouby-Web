@@ -119,6 +119,27 @@
   }
 </section>
 
+@if (loops().length > 0) {
+  <section aria-label="Ciclos">
+    <h3 class="mb-1 font-semibold">Ciclos ({{ loops().length }})</h3>
+    <ul class="space-y-1">
+      @for (loop of loops(); track $index) {
+        <li class="rounded-control border border-border px-3 py-2">
+          <span class="font-medium" [class.text-danger]="isInfinite(loop)">{{ loopLabelOf(loop.type) }}</span>
+          <span> · estados <span class="font-mono">{{ setOf(loop.dfa_states) }}</span></span>
+          <span> · actividades
+            @for (symbol of loop.activities; track symbol) {
+              @if (!$first) { <span>,&ngsp;</span> }
+              <app-node-ref [symbol]="symbol" />
+            }
+          </span>
+          <span class="mt-1 block text-xs text-content-muted">{{ loop.message }}</span>
+        </li>
+      }
+    </ul>
+  </section>
+}
+
 @for (finding of unknownFindings(); track finding.title) {
   <section [attr.aria-label]="finding.title">
     <h3 class="mb-1 font-semibold">{{ finding.title }} ({{ finding.items.length }})</h3>

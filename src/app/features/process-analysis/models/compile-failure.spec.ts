@@ -1,6 +1,6 @@
 import type { ApiError } from '../../../core/models/api-error';
 import { compileFailureView } from './compile-failure';
-import { deadlockLabel, downloadFailureMessage } from './analysis-messages';
+import { deadlockLabel, downloadFailureMessage, loopLabel } from './analysis-messages';
 
 describe('compileFailureView', () => {
   it('carries the diagnostics of a 422 with diagnostics', () => {
@@ -45,6 +45,12 @@ describe('deadlock and download messages', () => {
     expect(deadlockLabel('GATEWAY_DEADLOCK')).toContain('compuerta');
     expect(deadlockLabel('DEADLOCK_STATE')).toContain('autómata');
     expect(deadlockLabel('SOMETHING_NEW')).toBe('Bloqueo detectado');
+  });
+
+  it('labels loop findings by type with a generic fallback', () => {
+    expect(loopLabel('VALID_LOOP')).toBe('Ciclo controlado, con salida hacia un evento de fin');
+    expect(loopLabel('INFINITE_LOOP_TRAP')).toBe('Ciclo sin salida');
+    expect(loopLabel('SOMETHING_NEW')).toBe('Ciclo detectado');
   });
 
   it('words a download failure', () => {

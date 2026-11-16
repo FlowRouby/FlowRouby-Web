@@ -49,14 +49,24 @@ export interface Deadlock {
   message: string;
 }
 
+/**
+ * One finding per strongly connected component of the DFA that has a cycle. Observed types are `VALID_LOOP` (some
+ * state of the component reaches an accept state) and `INFINITE_LOOP_TRAP` (none does). `dfa_states` and
+ * `activities` (node symbols) are sorted sets, not a walk order.
+ */
+export interface LoopFinding {
+  type: string;
+  dfa_states: string[];
+  activities: string[];
+  message: string;
+}
+
 export interface FormalDiagnostics {
   /** Node symbols. */
   unreachable_nodes: string[];
   deadlocks: Deadlock[];
-  /** Element shape never observed non-empty. */
-  infinite_loops: unknown[];
-  /** Element shape never observed non-empty. */
-  valid_loops: unknown[];
+  infinite_loops: LoopFinding[];
+  valid_loops: LoopFinding[];
 }
 
 export interface FormalAnalysis {

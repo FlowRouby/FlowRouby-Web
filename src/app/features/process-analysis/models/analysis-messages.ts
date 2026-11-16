@@ -69,6 +69,16 @@ export function deadlockLabel(type: string): string {
   return Object.hasOwn(DEADLOCK_LABELS, type) ? DEADLOCK_LABELS[type] : 'Bloqueo detectado';
 }
 
+const LOOP_LABELS: Record<string, string> = {
+  VALID_LOOP: 'Ciclo controlado, con salida hacia un evento de fin',
+  INFINITE_LOOP_TRAP: 'Ciclo sin salida',
+};
+
+/** Spanish label for a loop finding, chosen by `type`. The backend `message` is secondary detail only. */
+export function loopLabel(type: string): string {
+  return Object.hasOwn(LOOP_LABELS, type) ? LOOP_LABELS[type] : 'Ciclo detectado';
+}
+
 /** Short Spanish notice for a failed ZIP download. */
 export function downloadFailureMessage(error: ApiError): string {
   return error.kind === 'network'
