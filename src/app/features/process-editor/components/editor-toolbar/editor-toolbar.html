@@ -2,6 +2,25 @@
   <input #file type="file" accept=".bpmn,.xml" hidden (change)="importFile(file)" />
   <button type="button" class="rounded-control bg-primary px-3 py-1.5 text-sm text-on-primary hover:bg-primary-hover" (click)="file.click()">Importar</button>
   <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="exportFile()">Exportar</button>
+  <select
+    #sample
+    aria-label="Diagramas de ejemplo"
+    class="rounded-control border border-border bg-surface px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring disabled:opacity-50"
+    [disabled]="samplesDisabled()"
+    (change)="loadSample(sample)"
+  >
+    <option value="" selected>Diagramas de ejemplo…</option>
+    @for (item of samples(); track item.id) {
+      <option [value]="item.id">{{ item.name }}</option>
+    }
+  </select>
+  @if (catalogFailed()) {
+    <span class="text-sm text-content-muted">No se pudieron cargar los ejemplos.</span>
+    <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="loadCatalog()">Reintentar</button>
+  }
+  @if (sampleFailed()) {
+    <span role="alert" class="text-sm text-danger">No se pudo cargar el ejemplo.</span>
+  }
   <span class="mx-2 h-5 w-px bg-border"></span>
   <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="zoomOut()" aria-label="Alejar">−</button>
   <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="zoomIn()" aria-label="Acercar">+</button>
