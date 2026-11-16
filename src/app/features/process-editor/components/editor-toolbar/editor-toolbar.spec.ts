@@ -3,8 +3,8 @@ import { Subject, of, throwError } from 'rxjs';
 import type { ApiError } from '../../../../core/models/api-error';
 import type { SampleProcess } from '../../../../core/models/sample-process';
 import { SampleApi } from '../../../../core/services/sample-api';
-import { ImportAnalysis } from '../../../process-analysis/services/import-analysis';
 import { BpmnModeler } from '../../services/bpmn-modeler';
+import { DiagramLoader } from '../../services/diagram-loader';
 import { EditorToolbar } from './editor-toolbar';
 
 const SAMPLES: SampleProcess[] = [
@@ -14,8 +14,8 @@ const SAMPLES: SampleProcess[] = [
 
 describe('EditorToolbar', () => {
   let fixture: ComponentFixture<EditorToolbar>;
-  const modeler = { importXml: vi.fn(), exportXml: vi.fn(), zoomIn: vi.fn(), zoomOut: vi.fn(), zoomFit: vi.fn() };
-  const analysis = { check: vi.fn() };
+  const modeler = { exportXml: vi.fn(), zoomIn: vi.fn(), zoomOut: vi.fn(), zoomFit: vi.fn() };
+  const loader = { load: vi.fn(), clear: vi.fn() };
   const sampleApi = { list: vi.fn(), xml: vi.fn() };
 
   const create = async () => {
@@ -25,14 +25,13 @@ describe('EditorToolbar', () => {
 
   beforeEach(async () => {
     vi.resetAllMocks();
-    modeler.importXml.mockResolvedValue(undefined);
-    analysis.check.mockResolvedValue(undefined);
+    loader.load.mockResolvedValue(true);
     sampleApi.list.mockReturnValue(of(SAMPLES));
     await TestBed.configureTestingModule({
       imports: [EditorToolbar],
       providers: [
         { provide: BpmnModeler, useValue: modeler },
-        { provide: ImportAnalysis, useValue: analysis },
+        { provide: DiagramLoader, useValue: loader },
         { provide: SampleApi, useValue: sampleApi },
       ],
     }).compileComponents();
@@ -47,7 +46,7 @@ describe('EditorToolbar', () => {
     const input = root().querySelector<HTMLInputElement>('input[type="file"]')!;
     Object.defineProperty(input, 'files', { value: [file], configurable: true });
     input.dispatchEvent(new Event('change'));
-    await vi.waitFor(() => expect(analysis.check).toHaveBeenCalled());
+    await vi.waitFor(() => expect(loader.load).toHaveBeenCalled());
   };
 
   const choose = (id: string) => {
@@ -65,18 +64,10 @@ describe('EditorToolbar', () => {
       expect(input.getAttribute('accept')).toBe('.bpmn,.xml');
     });
 
-    it('renders the file on the canvas and sends the original file to the backend', async () => {
+    it('hands the file text and the original file to the diagram loader', async () => {
       await importFile(file);
 
-      expect(modeler.importXml).toHaveBeenCalledWith('<definitions/>');
-      expect(analysis.check).toHaveBeenCalledWith(file);
-    });
-
-    it('still calls the backend when the canvas cannot render the file', async () => {
-      modeler.importXml.mockRejectedValue(new Error('bad diagram'));
-      await importFile(file);
-
-      expect(analysis.check).toHaveBeenCalledWith(file);
+      expect(loader.load).toHaveBeenCalledWith('<definitions/>', file);
     });
   });
 
@@ -148,11 +139,11 @@ describe('EditorToolbar', () => {
     it('imports the XML into the modeler and sends a file named after the sample to the backend', async () => {
       sampleApi.xml.mockReturnValue(of('<sample/>'));
       choose('01-secuencial');
-      await vi.waitFor(() => expect(analysis.check).toHaveBeenCalled());
+      await vi.waitFor(() => expect(loader.load).toHaveBeenCalled());
 
       expect(sampleApi.xml).toHaveBeenCalledWith('01-secuencial');
-      expect(modeler.importXml).toHaveBeenCalledWith('<sample/>');
-      const sent = analysis.check.mock.calls[0][0] as File;
+      expect(loader.load).toHaveBeenCalledWith('<sample/>', expect.any(File));
+      const sent = loader.load.mock.calls[0][1] as File;
       expect(sent.name).toBe('01-secuencial.bpmn');
       expect(await sent.text()).toBe('<sample/>');
     });
@@ -160,20 +151,12 @@ describe('EditorToolbar', () => {
     it('returns the select to the placeholder after loading', async () => {
       sampleApi.xml.mockReturnValue(of('<sample/>'));
       choose('02-decision-xor');
-      await vi.waitFor(() => expect(analysis.check).toHaveBeenCalled());
+      await vi.waitFor(() => expect(loader.load).toHaveBeenCalled());
       await fixture.whenStable();
       fixture.detectChanges();
 
       expect(select().value).toBe('');
       expect(select().disabled).toBe(false);
-    });
-
-    it('still calls the backend when the canvas cannot render the sample', async () => {
-      sampleApi.xml.mockReturnValue(of('<sample/>'));
-      modeler.importXml.mockRejectedValue(new Error('bad diagram'));
-      choose('01-secuencial');
-
-      await vi.waitFor(() => expect(analysis.check).toHaveBeenCalled());
     });
 
     it('disables the select while the XML is being fetched', async () => {
@@ -186,7 +169,7 @@ describe('EditorToolbar', () => {
 
       pending.next('<sample/>');
       pending.complete();
-      await vi.waitFor(() => expect(analysis.check).toHaveBeenCalled());
+      await vi.waitFor(() => expect(loader.load).toHaveBeenCalled());
       await fixture.whenStable();
       fixture.detectChanges();
 
@@ -203,8 +186,7 @@ describe('EditorToolbar', () => {
       });
 
       expect(alert()!.textContent).toContain('No se pudo cargar el ejemplo.');
-      expect(modeler.importXml).not.toHaveBeenCalled();
-      expect(analysis.check).not.toHaveBeenCalled();
+      expect(loader.load).not.toHaveBeenCalled();
       expect(select().value).toBe('');
       expect(select().disabled).toBe(false);
     });
@@ -219,7 +201,7 @@ describe('EditorToolbar', () => {
 
       sampleApi.xml.mockReturnValue(of('<sample/>'));
       choose('02-decision-xor');
-      await vi.waitFor(() => expect(analysis.check).toHaveBeenCalled());
+      await vi.waitFor(() => expect(loader.load).toHaveBeenCalled());
       await fixture.whenStable();
       fixture.detectChanges();
 
@@ -235,15 +217,15 @@ describe('EditorToolbar', () => {
       choose('02-decision-xor');
       second.next('<second/>');
       second.complete();
-      await vi.waitFor(() => expect(analysis.check).toHaveBeenCalledTimes(1));
+      await vi.waitFor(() => expect(loader.load).toHaveBeenCalledTimes(1));
 
       first.next('<first/>');
       first.complete();
       await fixture.whenStable();
 
-      expect(modeler.importXml).toHaveBeenCalledTimes(1);
-      expect(modeler.importXml).toHaveBeenCalledWith('<second/>');
-      expect((analysis.check.mock.calls[0][0] as File).name).toBe('02-decision-xor.bpmn');
+      expect(loader.load).toHaveBeenCalledTimes(1);
+      expect(loader.load).toHaveBeenCalledWith('<second/>', expect.any(File));
+      expect((loader.load.mock.calls[0][1] as File).name).toBe('02-decision-xor.bpmn');
     });
 
     it('ignores a sample response that arrives after a file import', async () => {
@@ -257,9 +239,8 @@ describe('EditorToolbar', () => {
       await fixture.whenStable();
       fixture.detectChanges();
 
-      expect(modeler.importXml).toHaveBeenCalledTimes(1);
-      expect(modeler.importXml).toHaveBeenCalledWith('<definitions/>');
-      expect(analysis.check).toHaveBeenCalledTimes(1);
+      expect(loader.load).toHaveBeenCalledTimes(1);
+      expect(loader.load).toHaveBeenCalledWith('<definitions/>', file);
       expect(select().disabled).toBe(false);
     });
   });

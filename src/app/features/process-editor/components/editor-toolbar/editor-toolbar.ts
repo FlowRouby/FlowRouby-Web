@@ -2,8 +2,8 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import type { SampleProcess } from '../../../../core/models/sample-process';
 import { SampleApi } from '../../../../core/services/sample-api';
-import { ImportAnalysis } from '../../../process-analysis/services/import-analysis';
 import { BpmnModeler } from '../../services/bpmn-modeler';
+import { DiagramLoader } from '../../services/diagram-loader';
 
 type CatalogState = 'loading' | 'ready' | 'failed';
 
@@ -14,7 +14,7 @@ type CatalogState = 'loading' | 'ready' | 'failed';
 })
 export class EditorToolbar {
   readonly #modeler = inject(BpmnModeler);
-  readonly #analysis = inject(ImportAnalysis);
+  readonly #loader = inject(DiagramLoader);
   readonly #sampleApi = inject(SampleApi);
 
   readonly #samples = signal<SampleProcess[]>([]);
@@ -49,7 +49,7 @@ export class EditorToolbar {
     const file = input.files?.[0];
     if (!file) return;
     this.#supersedeSampleLoad();
-    await this.#load(await file.text(), file);
+    await this.#loader.load(await file.text(), file);
     input.value = '';
   }
 
@@ -70,7 +70,7 @@ export class EditorToolbar {
       return;
     }
     if (token !== this.#loadToken) return;
-    await this.#load(xml, new File([xml], sample.filename, { type: 'application/xml' }));
+    await this.#loader.load(xml, new File([xml], sample.filename, { type: 'application/xml' }));
     if (token !== this.#loadToken) return;
     this.#loadingSample.set(false);
     select.value = '';
@@ -96,17 +96,6 @@ export class EditorToolbar {
 
   protected zoomFit(): void {
     this.#modeler.zoomFit();
-  }
-
-  /** Renders the XML on the canvas and sends the same content to the backend for analysis. */
-  async #load(xml: string, file: File): Promise<void> {
-    try {
-      await this.#modeler.importXml(xml);
-    } catch {
-      // The canvas could not render the file; the backend diagnostics explain what is wrong.
-    }
-    // Independent of the canvas: a rendering failure must not skip the backend, nor the reverse.
-    await this.#analysis.check(file);
   }
 
   /** A new import makes any sample still in flight obsolete. */
