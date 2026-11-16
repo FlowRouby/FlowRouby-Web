@@ -1,5 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { blockedReason } from '../../models/action-reason';
 import { downloadFailureMessage } from '../../models/analysis-messages';
 import { compileFailureView } from '../../models/compile-failure';
 import { CompileAnalysis } from '../../services/compile-analysis';
@@ -9,18 +10,20 @@ import { DiagnosticsPanel } from '../diagnostics-panel/diagnostics-panel';
 import { FlowspecView } from '../flowspec-view/flowspec-view';
 import { FormalAnalysisView } from '../formal-analysis-view/formal-analysis-view';
 import { RubyView } from '../ruby-view/ruby-view';
+import { SimulationView } from '../simulation-view/simulation-view';
 
-export type AnalysisTab = 'diagnostics' | 'flowspec' | 'formal' | 'ruby';
+export type AnalysisTab = 'diagnostics' | 'flowspec' | 'formal' | 'ruby' | 'simulation';
 
 const TABS: readonly { id: AnalysisTab; label: string }[] = [
   { id: 'diagnostics', label: 'Diagnósticos' },
   { id: 'flowspec', label: 'FlowSpec' },
   { id: 'formal', label: 'Análisis formal' },
   { id: 'ruby', label: 'Ruby' },
+  { id: 'simulation', label: 'Simulación' },
 ];
 
 @Component({
-  imports: [NgTemplateOutlet, DiagnosticsPanel, DiagnosticList, FlowspecView, FormalAnalysisView, RubyView],
+  imports: [NgTemplateOutlet, DiagnosticsPanel, DiagnosticList, FlowspecView, FormalAnalysisView, RubyView, SimulationView],
   selector: 'app-analysis-tabs',
   templateUrl: './analysis-tabs.html',
   host: { class: 'flex min-h-0 flex-col gap-2' },
@@ -48,18 +51,7 @@ export class AnalysisTabs {
   });
 
   /** Why the actions are disabled, decided from the analysis state (never from message text). */
-  protected readonly reason = computed(() => {
-    if (this.#analysis.supported()) return null;
-    if (this.#analysis.stale()) return 'El diagrama cambió; vuelva a verificarlo para compilar.';
-    switch (this.#analysis.status()) {
-      case 'idle':
-        return 'Verifique el diagrama antes de compilar.';
-      case 'loading':
-        return 'Verificando el diagrama…';
-      default:
-        return 'El diagrama todavía no se puede analizar.';
-    }
-  });
+  protected readonly reason = computed(() => blockedReason(this.#analysis, 'compilar'));
 
   protected select(tab: AnalysisTab): void {
     this.active.set(tab);

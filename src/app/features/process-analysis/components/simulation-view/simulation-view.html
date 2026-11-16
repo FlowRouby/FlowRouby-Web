@@ -1,0 +1,125 @@
+<section aria-label="Datos de entrada" class="space-y-2">
+  <label for="simulation-input" class="block font-semibold">Datos de entrada (JSON)</label>
+  <p id="simulation-input-hint" class="text-content-muted">
+    Objeto JSON con las variables que usa el proceso. Déjelo vacío para simular sin datos.
+  </p>
+  @if (contract(); as data) {
+    <p id="simulation-input-required" class="text-content-muted">
+      Entradas requeridas:
+      @for (field of data.required_inputs; track field.name) {
+        <span class="font-mono">{{ field.name }} ({{ field.type }})</span>{{ $last ? '' : ', ' }}
+      } @empty {
+        ninguna.
+      }
+    </p>
+  }
+  <textarea
+    id="simulation-input"
+    rows="5"
+    spellcheck="false"
+    class="w-full rounded-control border border-border bg-surface p-2 font-mono text-xs focus-visible:outline-2 focus-visible:outline-focus-ring"
+    [value]="inputText()"
+    [attr.aria-invalid]="inputInvalid() ? 'true' : null"
+    [attr.aria-describedby]="describedBy()"
+    (input)="onInput($event)"
+  ></textarea>
+  @if (inputInvalid()) {
+    <p id="simulation-input-error" role="alert" class="rounded-control border border-danger px-3 py-2 text-danger">
+      Los datos de entrada deben ser un objeto JSON válido (no una lista ni un valor simple).
+    </p>
+  }
+
+  <div class="flex flex-wrap items-center gap-2">
+    @if (contract()) {
+      <button type="button" class="rounded-control border border-border px-3 py-1 hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="useSample()">Usar datos de ejemplo</button>
+    }
+    <button type="button" class="rounded-control border border-border px-3 py-1 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-focus-ring" [disabled]="!canSimulate()" [attr.aria-describedby]="reason() ? 'simulation-reason' : null" (click)="simulate()">
+      {{ status() === 'loading' ? 'Simulando…' : 'Simular' }}
+    </button>
+    @if (pathShown()) {
+      <button type="button" class="rounded-control border border-border px-3 py-1 hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="clearPath()">Limpiar ruta</button>
+    }
+    @if (reason(); as why) {
+      <span id="simulation-reason" class="text-content-muted">{{ why }}</span>
+    }
+  </div>
+</section>
+
+@switch (status()) {
+  @case ('loading') {
+    <p role="status" class="text-content-muted">Simulando el diagrama…</p>
+  }
+  @case ('failed') {
+    @if (failureView(); as failure) {
+      <div class="space-y-2">
+        <p role="alert" class="rounded-control border border-border bg-surface-muted px-3 py-2">{{ failure.notice }}</p>
+        @if (failure.detail) {
+          <p class="text-content-muted">Detalle del servidor: <span class="font-mono text-xs">{{ failure.detail }}</span></p>
+        }
+        @if (failure.diagnostics.length > 0) {
+          <app-diagnostic-list [diagnostics]="failure.diagnostics" />
+        }
+      </div>
+    }
+  }
+}
+
+@if (result(); as response) {
+  @let run = response.simulation;
+  <section aria-label="Resultado de la simulación" class="space-y-3">
+    <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+      <dt class="text-content-muted">Estado</dt>
+      <dd class="font-medium">{{ run.completed ? 'Completada' : 'No completada' }}</dd>
+      <dt class="text-content-muted">Terminación</dt>
+      <dd>{{ terminationLabel(run.terminated_reason) }}</dd>
+      <dt class="text-content-muted">Aceptada por el autómata</dt>
+      <dd>{{ run.accepted_by_dfa === null ? 'No evaluada' : run.accepted_by_dfa ? 'Sí' : 'No' }}</dd>
+    </dl>
+
+    <div>
+      <h3 class="mb-1 font-semibold">Pasos ejecutados</h3>
+      @if (run.step_logs.length === 0) {
+        <p class="text-content-muted">La simulación no ejecutó ningún paso.</p>
+      } @else {
+        <ol class="space-y-1">
+          @for (step of run.step_logs; track step.step) {
+            <li class="rounded-control border border-border px-3 py-2">
+              <div class="flex flex-wrap items-baseline gap-x-2">
+                <span class="font-mono text-xs text-content-muted">{{ step.step }}.</span>
+                <app-node-ref [symbol]="step.node_id" [nodeIds]="response.bpmn_node_ids" />
+                <span class="font-medium">{{ step.name }}</span>
+                @if (kindLabel(step.kind); as label) {
+                  <span class="text-content-muted" [attr.title]="step.kind">{{ label }}</span>
+                } @else {
+                  <span class="font-mono text-xs text-content-muted">{{ step.kind }}</span>
+                }
+              </div>
+              @if (step.selected_targets?.length) {
+                <p class="mt-1">
+                  <span class="text-content-muted">Siguiente:</span>
+                  @for (target of step.selected_targets; track target) {
+                    <app-node-ref [symbol]="target" [nodeIds]="response.bpmn_node_ids" />
+                  }
+                </p>
+              }
+              @if (hasEntries(step.context_updates)) {
+                <p class="mt-1">
+                  <span class="text-content-muted">Variables actualizadas:</span>
+                  <code class="font-mono text-xs">{{ json(step.context_updates) }}</code>
+                </p>
+              }
+              @if (step.action) {
+                <p class="mt-1 text-xs text-content-muted">{{ step.action }}</p>
+              }
+            </li>
+          }
+        </ol>
+      }
+    </div>
+
+    <div>
+      <h3 class="mb-1 font-semibold">Contexto final</h3>
+      <pre aria-label="Contexto final" class="overflow-x-auto rounded-control border border-border bg-surface-muted p-3 font-mono text-xs whitespace-pre" tabindex="0">{{ json(run.final_context) }}</pre>
+    </div>
+  </section>
+}
