@@ -71,5 +71,13 @@ already exposes `/import`, `/compile` and `/simulate`.
 
 ## Progress and next step
 
-T1 done. Running count: 412 changed lines, above the delivery budget; the chain strategy must be
-chosen before planning a pull request. Next: T2, after user confirmation.
+Delivery: stacked PRs to `develop`, one per task (user asked for PR 1 right after T1).
+
+- PR 1 = T1, branch `feature/backend-api-integration`, commits `3c0f89c` + `b5c8b27`:
+  https://github.com/FlowRouby/FlowRouby-Web/pull/5 (419 changed lines, `size:exception` noted).
+- PR 2 = T2, branch `feature/import-diagnostics-panel`, stacked on PR 1.
+
+T2 decisions (user, 2026-11-15): diagnostic messages and diagnostics panel copy in Spanish
+(neutral), translated by `code`; the rest of the UI stays in English. Route: delegated direct.
+
+Next: T2 in progress.

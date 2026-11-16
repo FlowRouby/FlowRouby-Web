@@ -1,0 +1,97 @@
+<div class="space-y-3 text-sm">
+  @if (stale()) {
+    <div role="status" class="flex items-center justify-between gap-3 rounded-control border border-warning bg-surface-muted px-3 py-2">
+      <p>El diagrama cambió después del último análisis; los resultados pueden estar desactualizados.</p>
+      <button type="button" class="shrink-0 rounded-control border border-border px-3 py-1 hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="recheck()">Volver a verificar</button>
+    </div>
+  }
+
+  @switch (status()) {
+    @case ('idle') {
+      <p class="text-content-muted">Aún no se ha cargado ningún archivo para analizar.</p>
+    }
+    @case ('loading') {
+      <p role="status" class="text-content-muted">Analizando el diagrama…</p>
+    }
+    @case ('failed') {
+      <p role="alert" class="rounded-control border border-border bg-surface-muted px-3 py-2">{{ notice() }}</p>
+    }
+    @case ('loaded') {
+      <p class="flex gap-4 text-content-muted">
+        <span>Errores: {{ errorCount() }}</span>
+        <span>Advertencias: {{ warningCount() }}</span>
+        <span>Información: {{ info().length }}</span>
+      </p>
+
+      @if (rejected()) {
+        <p class="font-medium text-danger">No se pudo importar el diagrama. Corrija los errores indicados.</p>
+      } @else if (unsupported()) {
+        <p class="font-medium">El diagrama se muestra, pero todavía no se puede analizar.</p>
+      }
+
+      @if (attention().length === 0 && info().length === 0) {
+        <p class="text-content-muted">El diagrama se cargó sin diagnósticos.</p>
+      }
+
+      @if (attention().length > 0) {
+        <ul aria-label="Diagnósticos" class="space-y-1">
+          @for (item of attention(); track $index) {
+            <li>
+              <ng-container [ngTemplateOutlet]="entry" [ngTemplateOutletContext]="{ $implicit: item }" />
+            </li>
+          }
+        </ul>
+      }
+
+      @if (info().length > 0) {
+        <div>
+          <button type="button" class="rounded-control px-1 text-content-muted hover:text-content focus-visible:outline-2 focus-visible:outline-focus-ring" [attr.aria-expanded]="infoOpen()" aria-controls="diagnostics-info" (click)="infoOpen.set(!infoOpen())">
+            {{ infoOpen() ? 'Ocultar' : 'Mostrar' }} información ({{ info().length }})
+          </button>
+          @if (infoOpen()) {
+            <ul id="diagnostics-info" aria-label="Información" class="mt-1 space-y-1">
+              @for (item of info(); track $index) {
+                <li>
+                  <ng-container [ngTemplateOutlet]="entry" [ngTemplateOutletContext]="{ $implicit: item }" />
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      }
+    }
+  }
+</div>
+
+<ng-template #entry let-item>
+  @if (canFocus(item)) {
+    <button type="button" class="w-full rounded-control border border-border px-3 py-2 text-left hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" [attr.title]="item.message" (click)="focus(item)">
+      <ng-container [ngTemplateOutlet]="detail" [ngTemplateOutletContext]="{ $implicit: item }" />
+    </button>
+  } @else {
+    <div class="rounded-control border border-border px-3 py-2" [attr.title]="item.message">
+      <ng-container [ngTemplateOutlet]="detail" [ngTemplateOutletContext]="{ $implicit: item }" />
+    </div>
+  }
+</ng-template>
+
+<ng-template #detail let-item>
+  <span class="mr-2 inline-block rounded-control border px-1.5 text-xs font-semibold"
+    [class.border-danger]="item.severity === 'error'" [class.text-danger]="item.severity === 'error'"
+    [class.border-warning]="item.severity === 'warning'" [class.text-warning]="item.severity === 'warning'"
+    [class.border-info]="item.severity === 'info'" [class.text-info]="item.severity === 'info'">{{ labelOf(item.severity) }}</span>
+  @if (item.blocksAnalysis) {
+    <span class="mr-2 inline-block rounded-control bg-surface-muted px-1.5 text-xs font-semibold">Análisis bloqueado</span>
+  }
+  <span>{{ messageOf(item.code) }}</span>
+  <span class="mt-1 block text-xs text-content-muted">
+    @if (item.elementId) {
+      <span class="font-mono">{{ item.elementType ? item.elementType + ' · ' : '' }}{{ item.elementId }}</span>
+    } @else if (item.elementType) {
+      <span class="font-mono">{{ item.elementType }}</span>
+    }
+    @if (item.line !== null) {
+      <span>{{ item.elementId || item.elementType ? ' · ' : '' }}línea {{ item.line }}</span>
+    }
+  </span>
+</ng-template>

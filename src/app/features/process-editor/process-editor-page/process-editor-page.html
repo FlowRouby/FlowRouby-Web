@@ -17,9 +17,9 @@
       <app-bpmn-canvas class="min-h-0 flex-1" />
 
       @if (analysisOpen()) {
-        <section aria-label="Analysis" class="h-48 shrink-0 border-t border-border bg-surface p-4">
-          <h2 class="text-sm font-semibold">Analysis</h2>
-          <p class="mt-1 text-sm text-content-muted">Analysis results will appear here.</p>
+        <section aria-label="Analysis" class="flex h-56 shrink-0 flex-col border-t border-border bg-surface p-4">
+          <h2 class="mb-2 text-sm font-semibold">Analysis</h2>
+          <app-diagnostics-panel class="min-h-0 flex-1" />
         </section>
       }
     </main>

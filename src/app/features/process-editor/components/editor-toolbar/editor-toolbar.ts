@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { ImportAnalysis } from '../../../process-analysis/services/import-analysis';
 import { BpmnModeler } from '../../services/bpmn-modeler';
 
 @Component({
@@ -8,11 +9,18 @@ import { BpmnModeler } from '../../services/bpmn-modeler';
 })
 export class EditorToolbar {
   readonly #modeler = inject(BpmnModeler);
+  readonly #analysis = inject(ImportAnalysis);
 
   protected async importFile(input: HTMLInputElement): Promise<void> {
     const file = input.files?.[0];
     if (!file) return;
-    await this.#modeler.importXml(await file.text());
+    try {
+      await this.#modeler.importXml(await file.text());
+    } catch {
+      // The canvas could not render the file; the backend diagnostics explain what is wrong.
+    }
+    // Independent of the canvas: a rendering failure must not skip the backend, nor the reverse.
+    await this.#analysis.check(file);
     input.value = '';
   }
 
