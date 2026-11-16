@@ -85,23 +85,38 @@ describe('BpmnModeler', () => {
       );
 
       expect(fake.canvas.addMarker).toHaveBeenCalledTimes(1);
-      expect(fake.canvas.addMarker).toHaveBeenCalledWith('Task_1', 'fr-error');
+      expect(fake.canvas.addMarker).toHaveBeenCalledWith(expect.objectContaining({ id: 'Task_1' }), 'fr-error');
+    });
+
+    it('removes a marker from an element whose id changed after it was marked', () => {
+      service.applyMarkers(new Map([['Task_1', 'fr-path']]));
+      const element = fake.elements.get('Task_1')!;
+      fake.elements.delete('Task_1');
+      element.id = 'Renamed';
+      fake.elements.set('Renamed', element);
+
+      service.applyMarkers(new Map());
+
+      expect(fake.canvas.removeMarker).toHaveBeenCalledWith(element, 'fr-path');
     });
 
     it('removes the previous markers before applying new ones', () => {
       service.applyMarkers(new Map([['Task_1', 'fr-error']]));
       service.applyMarkers(new Map([['Task_2', 'fr-info']]));
 
-      expect(fake.canvas.removeMarker).toHaveBeenCalledWith('Task_1', 'fr-error');
-      expect(fake.canvas.addMarker).toHaveBeenLastCalledWith('Task_2', 'fr-info');
+      expect(fake.canvas.removeMarker).toHaveBeenCalledWith(expect.objectContaining({ id: 'Task_1' }), 'fr-error');
+      expect(fake.canvas.addMarker).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'Task_2' }), 'fr-info');
     });
 
-    it('never asks the canvas to remove a marker from an element that no longer exists', () => {
+    it('removes the marker of a deleted element by reference, never by an id the registry no longer knows', () => {
       service.applyMarkers(new Map([['Task_1', 'fr-error']]));
+      const element = fake.elements.get('Task_1');
       fake.elements.delete('Task_1');
       service.applyMarkers(new Map());
 
-      expect(fake.canvas.removeMarker).not.toHaveBeenCalled();
+      // bpmn-js ignores an element object that left the registry, but throws on an unknown id string.
+      expect(fake.canvas.removeMarker).toHaveBeenCalledTimes(1);
+      expect(fake.canvas.removeMarker).toHaveBeenCalledWith(element, 'fr-error');
     });
 
     describe('marker groups', () => {
@@ -117,9 +132,9 @@ describe('BpmnModeler', () => {
         service.applyMarkers(new Map(), 'path');
 
         expect(fake.canvas.removeMarker).toHaveBeenCalledTimes(2);
-        expect(fake.canvas.removeMarker).toHaveBeenCalledWith('Task_1', 'fr-path');
-        expect(fake.canvas.removeMarker).toHaveBeenCalledWith('Flow_1', 'fr-path');
-        expect(fake.canvas.removeMarker).not.toHaveBeenCalledWith('Task_1', 'fr-error');
+        expect(fake.canvas.removeMarker).toHaveBeenCalledWith(expect.objectContaining({ id: 'Task_1' }), 'fr-path');
+        expect(fake.canvas.removeMarker).toHaveBeenCalledWith(expect.objectContaining({ id: 'Flow_1' }), 'fr-path');
+        expect(fake.canvas.removeMarker).not.toHaveBeenCalledWith(expect.objectContaining({ id: 'Task_1' }), 'fr-error');
       });
 
       it('replacing the diagnostics does not remove the path', () => {
@@ -128,14 +143,14 @@ describe('BpmnModeler', () => {
         service.applyMarkers(new Map([['Task_2', 'fr-warning']]));
 
         expect(fake.canvas.removeMarker).toHaveBeenCalledTimes(1);
-        expect(fake.canvas.removeMarker).toHaveBeenCalledWith('Task_1', 'fr-error');
+        expect(fake.canvas.removeMarker).toHaveBeenCalledWith(expect.objectContaining({ id: 'Task_1' }), 'fr-error');
       });
 
       it('skips unknown ids in a named group', () => {
         service.applyMarkers(new Map([['Nope', 'fr-path'], ['Task_2', 'fr-path']]), 'path');
 
         expect(fake.canvas.addMarker).toHaveBeenCalledTimes(1);
-        expect(fake.canvas.addMarker).toHaveBeenCalledWith('Task_2', 'fr-path');
+        expect(fake.canvas.addMarker).toHaveBeenCalledWith(expect.objectContaining({ id: 'Task_2' }), 'fr-path');
       });
 
       it('forgets every group when a diagram load starts', async () => {
@@ -172,7 +187,7 @@ describe('BpmnModeler', () => {
     it('focuses an element by marking, selecting and scrolling to it', () => {
       expect(service.focusElement('Task_1')).toBe(true);
 
-      expect(fake.canvas.addMarker).toHaveBeenCalledWith('Task_1', 'fr-focus');
+      expect(fake.canvas.addMarker).toHaveBeenCalledWith(expect.objectContaining({ id: 'Task_1' }), 'fr-focus');
       expect(fake.selection.select).toHaveBeenCalledWith(fake.elements.get('Task_1'));
       expect(fake.canvas.scrollToElement).toHaveBeenCalledWith(fake.elements.get('Task_1'));
     });
@@ -181,8 +196,8 @@ describe('BpmnModeler', () => {
       service.focusElement('Task_1');
       service.focusElement('Task_2');
 
-      expect(fake.canvas.removeMarker).toHaveBeenCalledWith('Task_1', 'fr-focus');
-      expect(fake.canvas.addMarker).toHaveBeenLastCalledWith('Task_2', 'fr-focus');
+      expect(fake.canvas.removeMarker).toHaveBeenCalledWith(expect.objectContaining({ id: 'Task_1' }), 'fr-focus');
+      expect(fake.canvas.addMarker).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'Task_2' }), 'fr-focus');
     });
 
     it('does nothing and returns false for an id that is not on the canvas', () => {

@@ -11,8 +11,8 @@ export const DEFAULT_MARKER_GROUP = 'diagnostics';
 interface Canvas {
   zoom(): number;
   zoom(level: number | 'fit-viewport', center?: 'auto'): number;
-  addMarker(element: string, marker: string): void;
-  removeMarker(element: string, marker: string): void;
+  addMarker(element: BpmnElement, marker: string): void;
+  removeMarker(element: BpmnElement, marker: string): void;
   scrollToElement(element: BpmnElement): void;
 }
 
@@ -56,8 +56,8 @@ export class BpmnModeler {
   readonly #editListeners = new Set<() => void>();
   readonly #loadListeners = new Set<() => void>();
   /** Markers this service added per group, so they can be removed without scanning the canvas. */
-  #markers = new Map<string, Map<string, string>>();
-  #focused?: string;
+  #markers = new Map<string, Map<BpmnElement, string>>();
+  #focused?: BpmnElement;
   readonly #selection = signal<SelectedElement | null>(null);
 
   /** The single selected element, or null when nothing or several elements are selected. */
@@ -136,12 +136,13 @@ export class BpmnModeler {
    * independent features can mark the canvas without clobbering each other. Ids missing from the canvas are skipped.
    */
   applyMarkers(markers: ReadonlyMap<string, string>, group: string = DEFAULT_MARKER_GROUP): void {
-    for (const [id, marker] of this.#markers.get(group) ?? []) this.#removeMarker(id, marker);
-    const applied = new Map<string, string>();
+    for (const [element, marker] of this.#markers.get(group) ?? []) this.#canvas?.removeMarker(element, marker);
+    const applied = new Map<BpmnElement, string>();
     for (const [id, marker] of markers) {
-      if (!this.hasElement(id)) continue;
-      this.#canvas?.addMarker(id, marker);
-      applied.set(id, marker);
+      const element = this.#element(id);
+      if (!element) continue;
+      this.#canvas?.addMarker(element, marker);
+      applied.set(element, marker);
     }
     this.#markers.set(group, applied);
   }
@@ -157,8 +158,8 @@ export class BpmnModeler {
     const element = this.#element(id);
     if (!element) return false;
     this.#clearFocus();
-    this.#canvas?.addMarker(id, FOCUS_MARKER);
-    this.#focused = id;
+    this.#canvas?.addMarker(element, FOCUS_MARKER);
+    this.#focused = element;
     this.#modeler?.get<Selection>('selection').select(element);
     this.#canvas?.scrollToElement(element);
     return true;
@@ -197,12 +198,8 @@ export class BpmnModeler {
     return this.#modeler?.get<ElementRegistry>('elementRegistry').get(id);
   }
 
-  #removeMarker(id: string, marker: string): void {
-    if (this.hasElement(id)) this.#canvas?.removeMarker(id, marker);
-  }
-
   #clearFocus(): void {
-    if (this.#focused !== undefined) this.#removeMarker(this.#focused, FOCUS_MARKER);
+    if (this.#focused !== undefined) this.#canvas?.removeMarker(this.#focused, FOCUS_MARKER);
     this.#focused = undefined;
   }
 
