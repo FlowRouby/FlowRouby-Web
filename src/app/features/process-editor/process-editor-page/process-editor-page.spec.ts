@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { ImportAnalysis } from '../../process-analysis/services/import-analysis';
 import { BpmnModeler } from '../services/bpmn-modeler';
 import { ProcessEditorPage } from './process-editor-page';
 
@@ -16,7 +17,10 @@ describe('ProcessEditorPage', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ProcessEditorPage],
-      providers: [{ provide: BpmnModeler, useValue: { attach: () => {}, destroy: () => {}, selection: signal(null), updateName: () => {}, validateId: () => null, updateId: () => null } }],
+      providers: [
+        { provide: BpmnModeler, useValue: { attach: () => {}, destroy: () => {}, selection: signal(null), updateName: () => {}, validateId: () => null, updateId: () => null } },
+        { provide: ImportAnalysis, useValue: { status: signal('idle'), diagnostics: signal([]), failure: signal(null), stale: signal(false), supported: signal(false), rejected: signal(false), recheck: () => {} } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ProcessEditorPage);
@@ -28,7 +32,7 @@ describe('ProcessEditorPage', () => {
     expect(root.querySelector('app-editor-toolbar')).toBeTruthy();
     expect(root.querySelector('app-bpmn-canvas')).toBeTruthy();
     expect(root.querySelector('app-properties-panel')).toBeTruthy();
-    expect(root.querySelector('section[aria-label="Analysis"]')).toBeTruthy();
+    expect(root.querySelector('section[aria-label="Analysis"] app-diagnostics-panel')).toBeTruthy();
   });
 
   it('collapses the properties panel', async () => {

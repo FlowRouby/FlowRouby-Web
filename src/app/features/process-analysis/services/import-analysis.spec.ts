@@ -171,6 +171,21 @@ describe('ImportAnalysis', () => {
     expect(analysis.supported()).toBe(true);
   });
 
+  it('drops a re-check when a new file is loaded while the diagram is being exported', async () => {
+    let finishExport!: (xml: string) => void;
+    modeler.exportXml.mockReturnValue(new Promise<string>((resolve) => (finishExport = resolve)));
+    const recheck = analysis.recheck();
+    const newer = start();
+    respond(newer.stream, ok(true, [diagnostic('info', 'New')]));
+    await newer.done;
+    finishExport('<older/>');
+    await recheck;
+
+    expect(api.importProcess).toHaveBeenCalledTimes(1);
+    expect(analysis.diagnostics().map((d) => d.elementId)).toEqual(['New']);
+    expect(analysis.supported()).toBe(true);
+  });
+
   it('reports a failure when the current diagram cannot be exported', async () => {
     modeler.exportXml.mockRejectedValue(new Error('no'));
     await analysis.recheck();

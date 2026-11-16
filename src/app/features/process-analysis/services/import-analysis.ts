@@ -60,19 +60,21 @@ export class ImportAnalysis {
 
   /** Re-imports the diagram as it is now on the canvas. */
   async recheck(): Promise<void> {
+    // Claimed before exporting, so a file loaded while the export runs is not overwritten by this older diagram.
+    const request = ++this.#latest;
     let xml: string;
     try {
       xml = await this.#modeler.exportXml();
     } catch {
-      this.#fail({ kind: 'unknown', status: 0 });
+      if (request === this.#latest) this.#fail({ kind: 'unknown', status: 0 });
       return;
     }
+    if (request !== this.#latest) return;
     this.#stale.set(false);
-    await this.#send(new File([xml], RECHECK_FILE_NAME, { type: 'application/xml' }));
+    await this.#send(new File([xml], RECHECK_FILE_NAME, { type: 'application/xml' }), request);
   }
 
-  async #send(file: File): Promise<void> {
-    const request = ++this.#latest;
+  async #send(file: File, request = ++this.#latest): Promise<void> {
     this.#status.set('loading');
     try {
       const result = await firstValueFrom(this.#api.importProcess(file));
