@@ -75,6 +75,51 @@ describe('traceMarkers', () => {
     expect(markers.get('J')).toBe('fr-path');
   });
 
+  it('does not paint a connection that skips over visited nodes', () => {
+    const nodeIds = { a: 'A', b: 'B', c: 'C' };
+    const connections = { 'A>B': 'ab', 'B>C': 'bc', 'A>C': 'skip' };
+    const markers = traceMarkers(
+      result(nodeIds, [['a', []], ['b', []], ['c', []]]),
+      canvas(['A', 'B', 'C', 'ab', 'bc', 'skip'], connections),
+    );
+
+    expect([...markers.keys()]).toEqual(['A', 'ab', 'B', 'bc', 'C']);
+  });
+
+  it('does not paint a direct connection into a node reached through a gateway', () => {
+    const nodeIds = { a: 'A', g: 'G', b: 'B' };
+    const connections = { 'A>G': 'ag', 'G>B': 'gb', 'A>B': 'direct' };
+    const markers = traceMarkers(
+      result(nodeIds, [['a', []], ['b', ['g']]]),
+      canvas(['A', 'G', 'B', 'ag', 'gb', 'direct'], connections),
+    );
+
+    expect(markers.has('direct')).toBe(false);
+    expect(markers.get('gb')).toBe('fr-path');
+  });
+
+  it('follows each parallel branch when their tasks are interleaved', () => {
+    const nodeIds = { s: 'S', split: 'G', t1: 'T1', t2: 'T2', u1: 'U1', u2: 'U2' };
+    const connections = { 'S>G': 'sg', 'G>T1': 'g1', 'G>T2': 'g2', 'T1>U1': 'a', 'T2>U2': 'b' };
+    const markers = traceMarkers(
+      result(nodeIds, [['s', []], ['t1', ['split']], ['t2', ['split']], ['u1', []], ['u2', []]]),
+      canvas(['S', 'G', 'T1', 'T2', 'U1', 'U2', 'sg', 'g1', 'g2', 'a', 'b'], connections),
+    );
+
+    expect([...markers.keys()].sort()).toEqual(['S', 'G', 'T1', 'T2', 'U1', 'U2', 'sg', 'g1', 'g2', 'a', 'b'].sort());
+  });
+
+  it('paints the way back when a loop repeats a node', () => {
+    const nodeIds = { a: 'A', b: 'B', split: 'X', merge: 'M', c: 'C' };
+    const connections = { 'A>M': 'am', 'M>B': 'mb', 'B>X': 'bx', 'X>M': 'back', 'X>C': 'xc' };
+    const markers = traceMarkers(
+      result(nodeIds, [['a', []], ['b', ['merge']], ['b', ['split', 'merge']], ['c', ['split']]]),
+      canvas(['A', 'B', 'X', 'M', 'C', 'am', 'mb', 'bx', 'back', 'xc'], connections),
+    );
+
+    expect([...markers.keys()].sort()).toEqual(['A', 'B', 'X', 'M', 'C', 'am', 'mb', 'bx', 'back', 'xc'].sort());
+  });
+
   it('skips symbols without a mapping and elements that are not on the canvas', () => {
     const unmapped = result({ a: 'A' }, [['a', []], ['ghost', []]]);
     expect([...traceMarkers(unmapped, canvas(['A'])).keys()]).toEqual(['A']);
