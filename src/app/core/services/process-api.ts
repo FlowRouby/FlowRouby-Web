@@ -6,6 +6,7 @@ import { toApiError } from '../models/api-error';
 import type { CompileResult, ProjectArchive } from '../models/compile-result';
 import type { ImportResult } from '../models/import-result';
 import type { SimulationResult } from '../models/simulation-result';
+import type { TraceValidationResult } from '../models/trace-validation-result';
 
 const DEFAULT_ARCHIVE_NAME = 'project.zip';
 
@@ -58,6 +59,19 @@ export class ProcessApi {
     if (inputData !== undefined) body.append('input_data', inputData);
     return this.#http
       .post<SimulationResult>(`${environment.apiUrl}/api/v1/processes/simulate`, body)
+      .pipe(catchError((error: HttpErrorResponse) => throwError(() => toApiError(error))));
+  }
+
+  /**
+   * Checks whether the automaton of a BPMN file accepts a trace. `kind` says what `trace` holds: DFA symbols or
+   * original BPMN ids; exactly one of the two fields is sent. A rejected trace is still a 200. Failures are emitted
+   * as an `ApiError`.
+   */
+  validateTrace(file: File, trace: readonly string[], kind: 'symbols' | 'bpmn-ids'): Observable<TraceValidationResult> {
+    const body = this.#form(file);
+    body.append(kind === 'symbols' ? 'trace' : 'bpmn_trace', JSON.stringify(trace));
+    return this.#http
+      .post<TraceValidationResult>(`${environment.apiUrl}/api/v1/processes/validate-trace`, body)
       .pipe(catchError((error: HttpErrorResponse) => throwError(() => toApiError(error))));
   }
 

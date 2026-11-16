@@ -1,0 +1,115 @@
+<section aria-label="Cadena a validar" class="space-y-2">
+  <label for="trace-input" class="block font-semibold">Cadena a validar</label>
+  <p id="trace-input-hint" class="text-content-muted">
+    Escriba los nodos del recorrido, separados por espacios, comas o flechas (→).
+  </p>
+  <input
+    id="trace-input"
+    type="text"
+    autocomplete="off"
+    spellcheck="false"
+    placeholder="start_1 task_1 end_1"
+    class="w-full rounded-control border border-border bg-surface p-2 font-mono text-xs focus-visible:outline-2 focus-visible:outline-focus-ring"
+    aria-describedby="trace-input-hint"
+    [value]="inputText()"
+    (input)="onInput($event)"
+    (keydown.enter)="validate()"
+  />
+
+  <label for="trace-kind" class="block font-semibold">La cadena usa</label>
+  <select
+    id="trace-kind"
+    class="rounded-control border border-border bg-surface px-2 py-1 focus-visible:outline-2 focus-visible:outline-focus-ring"
+    (change)="onKind($event)"
+  >
+    @for (kind of kinds; track kind.id) {
+      <option [value]="kind.id" [selected]="inputKind() === kind.id">{{ kind.label }}</option>
+    }
+  </select>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <button type="button" class="rounded-control border border-border px-3 py-1 hover:bg-primary-soft disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-focus-ring" [disabled]="!canValidate()" [attr.aria-describedby]="reason() ? 'trace-reason' : null" (click)="validate()">
+      {{ status() === 'loading' ? 'Validando…' : 'Validar cadena' }}
+    </button>
+    @if (pathShown()) {
+      <button type="button" class="rounded-control border border-border px-3 py-1 hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="clearPath()">Quitar ruta del diagrama</button>
+    }
+    @if (reason(); as why) {
+      <span id="trace-reason" class="text-content-muted">{{ why }}</span>
+    }
+  </div>
+</section>
+
+@switch (status()) {
+  @case ('loading') {
+    <p role="status" class="text-content-muted">Validando la cadena…</p>
+  }
+  @case ('failed') {
+    @if (failureView(); as failure) {
+      <div class="space-y-2">
+        <p role="alert" class="rounded-control border border-border bg-surface-muted px-3 py-2">{{ failure.notice }}</p>
+        @if (failure.diagnostics.length > 0) {
+          <app-diagnostic-list [diagnostics]="failure.diagnostics" />
+        }
+      </div>
+    }
+  }
+}
+
+<div aria-live="polite">
+  @if (result(); as response) {
+    @let check = response.validation;
+    <section aria-label="Resultado de la validación" class="space-y-3">
+      <p class="rounded-control border px-3 py-2 font-semibold" [class.border-border]="check.accepted" [class.border-danger]="!check.accepted" [class.text-danger]="!check.accepted">
+        {{ check.accepted ? 'Cadena aceptada: el autómata reconoce este recorrido.' : 'Cadena rechazada: el autómata no reconoce este recorrido.' }}
+      </p>
+
+      <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+        @if (!check.accepted) {
+          <dt class="text-content-muted">Motivo</dt>
+          <dd>{{ rejectionMessage(check.rejection_reason) }}</dd>
+        }
+        @if (check.rejected_at !== null) {
+          <dt class="text-content-muted">Símbolo rechazado</dt>
+          <dd>
+            <app-node-ref [symbol]="check.trace[check.rejected_at]" [nodeIds]="response.bpmn_node_ids" />
+            (posición {{ check.rejected_at + 1 }})
+          </dd>
+        }
+        <dt class="text-content-muted">Estado final</dt>
+        <dd class="font-mono">{{ check.final_state }}</dd>
+      </dl>
+
+      <div>
+        <h3 class="mb-1 font-semibold">Pasos consumidos</h3>
+        @if (check.steps.length === 0) {
+          <p class="text-content-muted">No se consumió ningún símbolo.</p>
+        } @else {
+          <ol class="space-y-1">
+            @for (step of check.steps; track step.index) {
+              <li class="flex flex-wrap items-baseline gap-x-2 rounded-control border border-border px-3 py-2">
+                <span class="font-mono text-xs text-content-muted">{{ step.index + 1 }}.</span>
+                <span class="font-mono text-xs">{{ step.from_state }}</span>
+                <span aria-hidden="true">→</span>
+                <app-node-ref [symbol]="step.symbol" [nodeIds]="response.bpmn_node_ids" />
+                <span aria-hidden="true">→</span>
+                <span class="font-mono text-xs">{{ step.to_state }}</span>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+
+      @if (!check.accepted) {
+        <p class="flex flex-wrap items-baseline gap-x-2">
+          <span class="text-content-muted">Símbolos esperados:</span>
+          @for (symbol of check.expected_symbols; track symbol) {
+            <app-node-ref [symbol]="symbol" [nodeIds]="response.bpmn_node_ids" />
+          } @empty {
+            ninguno
+          }
+        </p>
+      }
+    </section>
+  }
+</div>
