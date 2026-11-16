@@ -188,7 +188,21 @@ merged; merging in this order needs no retargeting.
 
 - Backend: return the ε-NFA structure in `formal_analysis` (user decides whether to expand it).
 - Backend: endpoint to validate a typed route against the inferred automaton; then a frontend
-  input to type the route and paint it.
+  input to type the route and paint it. Details (2026-11-16):
+  - `simulate` is a dry run: it takes variables, evaluates gateway conditions and returns the route
+    the engine took (`visited_nodes`); a variable that is not sent defaults to `0`. It never takes a
+    route as input. `accepted_by_dfa` only checks the route the engine itself produced.
+  - What is missing is membership: given a string of symbols, run the DFA and say whether it is
+    accepted. The backend already has `DFA.accepts(trace)` in
+    `backend/app/features/formal_analysis/dfa/dfa_builder.py`; it only needs its own endpoint.
+  - The DFA alphabet has start events, tasks and end events only; gateways are not symbols.
+  - Proposed to the user: `POST /api/v1/processes/validate-trace` with `file` plus `trace`
+    (symbols) or `bpmn_trace` (original BPMN ids), returning `bpmn_node_ids` and per-symbol steps
+    with the rejection index and reason. The final shape is whatever the backend ships: type it
+    from real responses, as with `compile` and `simulate`.
+  - Frontend when it exists: a separate "Validar cadena" tab next to "Simulación"; reuse the path
+    marker group (`pathMarkers`, `BpmnModeler.applyMarkers`), `app-node-ref` and the discard rules
+    of `SimulationAnalysis`. Paint the accepted prefix and mark where it is rejected.
 - Frontend, minor: focus marker stays until the next focus or load; backend English `message` is
   shown as a tooltip on diagnostics.
 
