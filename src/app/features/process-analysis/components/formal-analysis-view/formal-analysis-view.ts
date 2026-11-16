@@ -43,6 +43,11 @@ export class FormalAnalysisView {
     return this.dfa().accept_states.includes(state);
   }
 
+  /** Set notation for a list of states: `{D0, D1}`, or `∅` when it is empty. */
+  protected setOf(items: readonly string[]): string {
+    return items.length === 0 ? '∅' : `{${items.join(', ')}}`;
+  }
+
   protected json(value: unknown): string {
     return JSON.stringify(value);
   }

@@ -61,6 +61,21 @@ describe('FormalAnalysisView', () => {
     expect(rows[1].querySelector('th')?.textContent).not.toContain('(');
   });
 
+  it('states the formal definition of the DFA: Q, Σ, q₀ and F, in flow order', async () => {
+    const { root } = await render(XOR_RESULT);
+    const definition = root.querySelector('dl[aria-label="Definición formal del DFA"]') as HTMLElement;
+    const terms = [...definition.querySelectorAll('dt')].map((dt) => dt.textContent?.trim());
+    const values = [...definition.querySelectorAll('dd')].map((dd) => dd.textContent?.replace(/\s+/g, ' ').trim());
+
+    expect(root.textContent).toContain('M = (Q, Σ, δ, q₀, F)');
+    expect(terms).toEqual(['Q', 'Σ', 'q₀', 'F', 'δ']);
+    expect(values[0]).toContain('{D0, D1, D2, D3, D4, D5, D6}');
+    expect(values[2]).toContain('D0');
+    expect(values[3]).toContain('{D5, D6}');
+    const alphabet = [...definition.querySelectorAll('dd')[1].querySelectorAll('app-node-ref')].map((ref) => ref.textContent?.trim());
+    expect(alphabet).toEqual(['start_1 · Start', 'task_1 · Review', 'task_2 · Notify', 'task_3 · Reject', 'end_1 · EndOk', 'end_2 · EndNo']);
+  });
+
   it('shows a symbol with its BPMN id as a button that focuses the element', async () => {
     const { root } = await render(XOR_RESULT);
     const button = [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'task_1 · Review');
@@ -92,7 +107,7 @@ describe('FormalAnalysisView', () => {
     expect(text()).toContain('Flujo de trabajo inválido');
     expect(root.querySelector('section[aria-label="Expresión regular"] p')?.textContent).toBe('∅');
     expect(text()).toContain('No se encontró ningún camino.');
-    expect(text()).toContain('Estados de aceptación: ninguno');
+    expect(text()).toContain('Estados de aceptación: ∅');
     const unreachable = root.querySelector('section[aria-label="Nodos inalcanzables"]');
     expect(unreachable?.textContent).toContain('end_1 · End');
     expect(unreachable?.textContent).toContain('task_3 · Orphan');
