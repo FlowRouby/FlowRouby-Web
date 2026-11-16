@@ -1,6 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { blockedReason } from '../../models/action-reason';
 import { kindLabel, simulationFailureView, terminationLabel } from '../../models/simulation-messages';
+import { collapseRepeats } from '../../models/simulation-steps';
 import { CompileAnalysis } from '../../services/compile-analysis';
 import { ImportAnalysis } from '../../services/import-analysis';
 import { SimulationAnalysis } from '../../services/simulation-analysis';
@@ -39,6 +40,11 @@ export class SimulationView {
     if (this.inputInvalid()) ids.push('simulation-input-error');
     return ids.join(' ');
   });
+
+  /** Executed steps, with the identical runs of a loop collapsed into one line. */
+  protected readonly steps = computed(() => collapseRepeats(this.result()?.simulation.step_logs ?? []));
+  /** The backend stopped at its step limit: with this data the process never reaches an end event. */
+  protected readonly stepLimitReached = computed(() => this.result()?.simulation.terminated_reason === 'MAX_STEPS_EXCEEDED');
 
   protected readonly terminationLabel = terminationLabel;
   protected readonly kindLabel = kindLabel;

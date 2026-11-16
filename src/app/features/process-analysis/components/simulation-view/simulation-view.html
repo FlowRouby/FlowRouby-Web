@@ -76,13 +76,24 @@
       <dd>{{ run.accepted_by_dfa === null ? 'No evaluada' : run.accepted_by_dfa ? 'Sí' : 'No' }}</dd>
     </dl>
 
+    @if (stepLimitReached()) {
+      <p role="alert" class="rounded-control border border-warning px-3 py-2">
+        Con estos datos el proceso no termina: la simulación se detuvo tras {{ run.step_logs.length }} pasos sin llegar a un evento de fin. Revise los datos de entrada que deciden la salida del ciclo.
+      </p>
+    }
+
     <div>
       <h3 class="mb-1 font-semibold">Pasos ejecutados</h3>
       @if (run.step_logs.length === 0) {
         <p class="text-content-muted">La simulación no ejecutó ningún paso.</p>
       } @else {
         <ol class="space-y-1">
-          @for (step of run.step_logs; track step.step) {
+          @for (item of steps(); track $index) {
+            @if (item.repeat; as repeat) {
+              <li class="rounded-control border border-dashed border-border bg-surface-muted px-3 py-2 text-content-muted" data-repeat>
+                {{ repeat.length === 1 ? 'El paso anterior' : 'Los ' + repeat.length + ' pasos anteriores' }} se {{ repeat.length === 1 ? 'repitió' : 'repitieron' }} igual {{ repeat.times }} {{ repeat.times === 1 ? 'vez' : 'veces' }} más (pasos {{ repeat.from }} a {{ repeat.to }}).
+              </li>
+            } @else if (item.step; as step) {
             <li class="rounded-control border border-border px-3 py-2">
               <div class="flex flex-wrap items-baseline gap-x-2">
                 <span class="font-mono text-xs text-content-muted">{{ step.step }}.</span>
@@ -112,6 +123,7 @@
                 <p class="mt-1 text-xs text-content-muted">{{ step.action }}</p>
               }
             </li>
+            }
           }
         </ol>
       }

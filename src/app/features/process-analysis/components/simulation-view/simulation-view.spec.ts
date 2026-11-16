@@ -235,6 +235,50 @@ describe('SimulationView', () => {
     expect(named('Limpiar ruta')).toBeUndefined();
   });
 
+  describe('a loop the data never leaves', () => {
+    beforeEach(async () => {
+      const loop = ['gateway_1', 'task_1', 'gateway_2', 'task_2'];
+      const nodes = ['start_1', ...Array.from({ length: 99 }, (_, index) => loop[index % loop.length])];
+      api.simulate.mockReturnValue(
+        of({
+          ...SIMULATION_WITH_INPUT,
+          bpmn_node_ids: null,
+          simulation: {
+            ...SIMULATION_WITH_INPUT.simulation,
+            completed: false,
+            terminated_reason: 'MAX_STEPS_EXCEEDED',
+            visited_nodes: nodes,
+            step_logs: nodes.map((node_id, index) => ({ step: index + 1, node_id, name: node_id, kind: 'user_task' })),
+          },
+        }),
+      );
+      await simulate();
+    });
+
+    it('warns that the process does not end with this data', () => {
+      const alert = root.querySelector('section[aria-label="Resultado de la simulación"] [role="alert"]');
+      expect(alert?.textContent).toContain('Con estos datos el proceso no termina');
+      expect(alert?.textContent).toContain('tras 100 pasos');
+    });
+
+    it('shows the loop once and one line for its identical runs', () => {
+      const items = [...root.querySelectorAll('ol > li')];
+      const repeats = items.filter((item) => item.hasAttribute('data-repeat'));
+
+      expect(items.length).toBeLessThan(10);
+      expect(repeats).toHaveLength(1);
+      expect(repeats[0].textContent?.replace(/\s+/g, ' ')).toContain('Los 4 pasos anteriores se repitieron igual 23 veces más (pasos 6 a 97).');
+    });
+  });
+
+  it('shows no step-limit warning and no collapsed line for a run that ends', async () => {
+    api.simulate.mockReturnValue(of(SIMULATION_WITH_INPUT));
+    await simulate();
+
+    expect(root.querySelector('section[aria-label="Resultado de la simulación"] [role="alert"]')).toBeNull();
+    expect(root.querySelector('li[data-repeat]')).toBeNull();
+  });
+
   it('shows an unknown termination code and an unknown step kind as raw codes', async () => {
     const base = SIMULATION_WITH_INPUT.simulation;
     api.simulate.mockReturnValue(
