@@ -52,10 +52,10 @@ describe('FormalAnalysisView', () => {
     const cells = (row: Element) => [...row.querySelectorAll('td')].map((c) => c.textContent?.trim());
 
     expect(rows).toHaveLength(7);
-    // Alphabet order: end_1, end_2, start_1, task_1, task_2, task_3
-    expect(cells(rows[0])).toEqual(['', '', 'D1', '', '', '']);
-    expect(cells(rows[2])).toEqual(['', '', '', '', 'D3', 'D4']);
-    expect(cells(rows[3])).toEqual(['D5', '', '', '', '', '']);
+    // Flow order: start_1, task_1, task_2, task_3, end_1, end_2
+    expect(cells(rows[0])).toEqual(['D1', '', '', '', '', '']);
+    expect(cells(rows[2])).toEqual(['', '', 'D3', 'D4', '', '']);
+    expect(cells(rows[3])).toEqual(['', '', '', '', 'D5', '']);
     expect(rows[0].querySelector('th')?.textContent).toContain('(inicial)');
     expect(rows[5].querySelector('th')?.textContent).toContain('(aceptación)');
     expect(rows[1].querySelector('th')?.textContent).not.toContain('(');

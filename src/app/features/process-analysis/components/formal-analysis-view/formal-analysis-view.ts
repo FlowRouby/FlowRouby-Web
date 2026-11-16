@@ -1,6 +1,7 @@
 import { Component, computed, input } from '@angular/core';
 import type { CompileResult } from '../../../../core/models/compile-result';
 import { deadlockLabel } from '../../models/analysis-messages';
+import { flowOrder } from '../../models/dfa-order';
 import { DiagnosticList } from '../diagnostic-list/diagnostic-list';
 import { NodeRef } from '../node-ref/node-ref';
 
@@ -15,6 +16,8 @@ export class FormalAnalysisView {
 
   protected readonly analysis = computed(() => this.result().formal_analysis);
   protected readonly dfa = computed(() => this.analysis().dfa);
+  /** States and symbols in the order the process flows; the backend sends them sorted by name. */
+  protected readonly order = computed(() => flowOrder(this.dfa()));
   protected readonly diagnostics = computed(() => this.result().validation.diagnostics);
   /** Shapes the backend never returned non-empty are shown generically, only when present. */
   protected readonly unknownFindings = computed(() => {

@@ -27,20 +27,20 @@
       <thead class="text-content-muted">
         <tr>
           <th scope="col" class="px-2 py-1 font-medium">Estado</th>
-          @for (symbol of dfa().alphabet; track symbol) {
+          @for (symbol of order().alphabet; track symbol) {
             <th scope="col" class="px-2 py-1 font-normal"><app-node-ref [symbol]="symbol" /></th>
           }
         </tr>
       </thead>
       <tbody>
-        @for (state of dfa().states; track state) {
+        @for (state of order().states; track state) {
           <tr class="border-t border-border">
             <th scope="row" class="px-2 py-1 font-mono font-normal">
               {{ state }}
               @if (isStart(state)) { <span class="font-sans text-xs text-content-muted">(inicial)</span> }
               @if (isAccept(state)) { <span class="font-sans text-xs text-content-muted">(aceptación)</span> }
             </th>
-            @for (symbol of dfa().alphabet; track symbol) {
+            @for (symbol of order().alphabet; track symbol) {
               <td class="px-2 py-1 font-mono">{{ target(state, symbol) }}</td>
             }
           </tr>
