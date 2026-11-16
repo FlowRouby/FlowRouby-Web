@@ -3,7 +3,7 @@
     {{ analysis().is_valid_workflow ? 'Flujo de trabajo válido' : 'Flujo de trabajo inválido' }}
   </p>
   <p class="text-content-muted">Clasificación de Chomsky: <span class="font-medium text-content">{{ analysis().chomsky_classification }}</span></p>
-  <p class="text-content-muted">Estados del ε-NFA: <span class="font-medium text-content">{{ analysis().nfa_state_count }}</span> <span>(el servidor solo informa la cantidad de estados, no su estructura)</span></p>
+  <p class="text-content-muted">Estados del ε-NFA: <span class="font-medium text-content">{{ analysis().nfa_state_count }}</span>&ngsp;<span>(el servidor solo informa la cantidad de estados, no su estructura)</span></p>
 </section>
 
 <section aria-label="Expresión regular">

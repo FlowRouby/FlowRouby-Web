@@ -34,6 +34,8 @@ export class CompileAnalysis {
   readonly #downloadFailure = signal<ApiError | null>(null);
   /** Id of the newest compile; older responses are ignored. */
   #latest = 0;
+  /** Bumped whenever the diagram changes, so a download failure is not attributed to a newer diagram. */
+  #diagramVersion = 0;
 
   readonly status = this.#status.asReadonly();
   readonly result = this.#result.asReadonly();
@@ -46,6 +48,7 @@ export class CompileAnalysis {
 
   constructor() {
     this.#modeler.onEdited(() => this.#discard());
+    this.#modeler.onLoad(() => this.#discard());
     effect(() => {
       if (this.#analysis.status() === 'loading') untracked(() => this.#discard());
     });
@@ -80,11 +83,12 @@ export class CompileAnalysis {
     if (!this.canDownload()) return;
     this.#downloading.set(true);
     this.#downloadFailure.set(null);
+    const version = this.#diagramVersion;
     try {
       const archive = await firstValueFrom(this.#api.downloadProject(await this.#currentDiagram()));
       this.#save(archive.blob, archive.fileName);
     } catch (thrown) {
-      this.#downloadFailure.set(asApiError(thrown));
+      if (version === this.#diagramVersion) this.#downloadFailure.set(asApiError(thrown));
     } finally {
       this.#downloading.set(false);
     }
@@ -104,6 +108,7 @@ export class CompileAnalysis {
   }
 
   #discard(): void {
+    this.#diagramVersion++;
     this.#begin();
     this.#status.set('idle');
   }

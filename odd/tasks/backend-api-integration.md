@@ -47,7 +47,7 @@ already exposes `/import`, `/compile` and `/simulate`.
   proxy (pointed at port 8085). Route: delegated direct (writer trigger: 2+ non-trivial files).
 - [x] T2 — Load file → canvas + `/import`; diagnostics panel with canvas highlight by `elementId`
   and `line`.
-- [ ] T3 — `supported` gates compile/simulate; compile view (FlowSpec, formal analysis, Ruby files)
+- [x] T3 — `supported` gates compile/simulate; compile view (FlowSpec, formal analysis, Ruby files)
   and ZIP download.
 - [ ] T4 — Simulate with `input_data` and highlight the traversed path through `bpmn_node_ids`.
 
@@ -125,4 +125,21 @@ lines, 97 tests pass.
 - Element shapes of `flag_regions`, `infinite_loops` and `valid_loops` were never observed
   non-empty: keep them `unknown`.
 
-Next: T3 in progress on `feature/compile-analysis`. Route: delegated direct.
+T3 evidence (2026-11-16), branch `feature/compile-analysis` (stacked on `feature/spanish-ui-copy`,
+not pushed), route delegated direct:
+
+- `d683cdb` API compile + ZIP, `b9151da` compile state + symbol helper, `c37bb8a` views,
+  `40633fa` analysis tabs, plus a fix commit for the review findings.
+- `pnpm test --watch=false`: 20 files / 199 tests passed; `pnpm build` succeeded.
+- Browser check with the real captured responses replayed (the backend process was down): the
+  three views render the real payload, the ZIP downloads as `loan_rails.zip`, a node symbol focuses
+  its BPMN element through `bpmn_node_ids`, an edit or a new load discards the result and disables
+  compile. Pending: one end-to-end pass against the live backend.
+- Independent verifier: types match the real payloads. Fixed: results and diagnostics are now
+  discarded synchronously when a diagram load starts (`BpmnModeler.onLoad`), late download failures
+  are dropped, `filename*` is parsed, tab `aria-controls` is valid. This also closes the T2 open
+  item about state surviving a canvas re-attach.
+- Reusable for T4: `toCanvasId`/`toCanvasIds` (`process-analysis/models/symbol-nodes.ts`),
+  `app-node-ref`, `CompileAnalysis`, `ProcessApi`.
+
+Next: T4 (simulate with `input_data`, highlight the path), after user confirmation.

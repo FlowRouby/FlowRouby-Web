@@ -11,9 +11,10 @@ import { ImportAnalysis, type ImportStatus } from './import-analysis';
 
 describe('CompileAnalysis', () => {
   let edited: () => void;
+  let loadStarted: () => void;
   const importStatus = signal<ImportStatus>('loaded');
   const supported = signal(true);
-  const modeler = { onEdited: vi.fn(), exportXml: vi.fn() };
+  const modeler = { onEdited: vi.fn(), onLoad: vi.fn(), exportXml: vi.fn() };
   const api = { compile: vi.fn(), downloadProject: vi.fn() };
   let compile: CompileAnalysis;
 
@@ -24,6 +25,7 @@ describe('CompileAnalysis', () => {
     importStatus.set('loaded');
     supported.set(true);
     modeler.onEdited.mockImplementation((listener: () => void) => (edited = listener));
+    modeler.onLoad.mockImplementation((listener: () => void) => (loadStarted = listener));
     modeler.exportXml.mockResolvedValue('<definitions/>');
     TestBed.configureTestingModule({
       providers: [
@@ -125,6 +127,23 @@ describe('CompileAnalysis', () => {
         expect(compile.status()).toBe('idle');
       });
 
+      it('drops the result synchronously when a diagram load starts, before any import check', () => {
+        loadStarted();
+        expect(compile.result()).toBeNull();
+        expect(compile.status()).toBe('idle');
+        expect(compile.bpmnIdOf('task_1')).toBeNull();
+      });
+
+      it('drops a failure when a diagram load starts', async () => {
+        api.compile.mockReturnValue(throwError(() => ({ kind: 'network', status: 0 })));
+        await compile.compile();
+
+        loadStarted();
+
+        expect(compile.failure()).toBeNull();
+        expect(compile.status()).toBe('idle');
+      });
+
       it('drops a failure too', async () => {
         api.compile.mockReturnValue(throwError(() => ({ kind: 'network', status: 0 })));
         await compile.compile();
@@ -174,6 +193,35 @@ describe('CompileAnalysis', () => {
         await running;
 
         expect(compile.result()).toBeNull();
+      });
+
+      it('ignores a response that arrives after a diagram load started', async () => {
+        const pending = new Subject<CompileResult>();
+        api.compile.mockReturnValue(pending);
+
+        const running = compile.compile();
+        await flush();
+        loadStarted();
+        pending.next(XOR_RESULT);
+        pending.complete();
+        await running;
+
+        expect(compile.result()).toBeNull();
+        expect(compile.status()).toBe('idle');
+      });
+
+      it('ignores a failure that arrives after a diagram load started', async () => {
+        const pending = new Subject<CompileResult>();
+        api.compile.mockReturnValue(pending);
+
+        const running = compile.compile();
+        await flush();
+        loadStarted();
+        pending.error({ kind: 'network', status: 0 });
+        await running;
+
+        expect(compile.failure()).toBeNull();
+        expect(compile.status()).toBe('idle');
       });
 
       it('ignores a failure of an outdated request', async () => {
@@ -251,6 +299,36 @@ describe('CompileAnalysis', () => {
       await first;
 
       expect(api.downloadProject).toHaveBeenCalledTimes(1);
+    });
+
+    it.each<[string, () => void]>([
+      ['the diagram is edited', () => edited()],
+      ['a new diagram is loaded', () => loadStarted()],
+    ])('does not report a download failure that arrives after %s', async (_name, change) => {
+      const pending = new Subject<{ blob: Blob; fileName: string }>();
+      api.downloadProject.mockReturnValue(pending);
+
+      const running = compile.download();
+      await flush();
+      change();
+      pending.error({ kind: 'network', status: 0 });
+      await running;
+
+      expect(compile.downloadFailure()).toBeNull();
+      expect(compile.downloading()).toBe(false);
+    });
+
+    it.each<[string, () => void]>([
+      ['an edit', () => edited()],
+      ['a diagram load', () => loadStarted()],
+    ])('clears a previous download failure on %s', async (_name, change) => {
+      api.downloadProject.mockReturnValue(throwError(() => ({ kind: 'network', status: 0 })));
+      await compile.download();
+      expect(compile.downloadFailure()).not.toBeNull();
+
+      change();
+
+      expect(compile.downloadFailure()).toBeNull();
     });
 
     it('exposes the failure and saves nothing', async () => {

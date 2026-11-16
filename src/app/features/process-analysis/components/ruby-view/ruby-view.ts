@@ -4,7 +4,7 @@ import type { GeneratedRuby } from '../../../../core/models/compile-result';
 @Component({
   selector: 'app-ruby-view',
   templateUrl: './ruby-view.html',
-  host: { class: 'block text-sm' },
+  host: { class: 'flex min-h-0 flex-1 flex-col text-sm' },
 })
 export class RubyView {
   readonly ruby = input.required<GeneratedRuby>();

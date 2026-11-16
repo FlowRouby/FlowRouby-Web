@@ -42,7 +42,7 @@ describe('FormalAnalysisView', () => {
     expect(text()).toContain('Flujo de trabajo válido');
     expect(text()).toContain('Type-3');
     expect(text()).toContain('(start_1 · task_1 · task_2 · end_1 | start_1 · task_1 · task_3 · end_2)');
-    expect(text()).toContain('Estados del ε-NFA: 15');
+    expect(text()).toContain('Estados del ε-NFA: 15 (el servidor');
     expect(text()).toContain('no su estructura');
   });
 

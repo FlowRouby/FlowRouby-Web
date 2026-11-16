@@ -137,6 +137,21 @@ describe('ProcessApi', () => {
       expect(received?.blob).toBeInstanceOf(Blob);
     });
 
+    it.each<[string, string, string]>([
+      ['a quoted filename', 'attachment; filename="loan_rails.zip"', 'loan_rails.zip'],
+      ['an unquoted filename', 'attachment; filename=loan_rails.zip', 'loan_rails.zip'],
+      ['only filename*', "attachment; filename*=UTF-8''pr%C3%A9stamo%20rails.zip", 'préstamo rails.zip'],
+      ['both, preferring filename*', "attachment; filename=\"fallback.zip\"; filename*=UTF-8''real.zip", 'real.zip'],
+      ['a malformed filename* and a plain filename', "attachment; filename*=UTF-8''%E0%A4%A; filename=\"plain.zip\"", 'plain.zip'],
+    ])('reads the file name from %s', (_name, header, expected) => {
+      let name: string | undefined;
+      api.downloadProject(file()).subscribe((value) => (name = value.fileName));
+
+      zipRequest().flush(new Blob(['zip']), { headers: { 'Content-Disposition': header } });
+
+      expect(name).toBe(expected);
+    });
+
     it('falls back to a default file name without Content-Disposition', () => {
       let name: string | undefined;
       api.downloadProject(file()).subscribe((value) => (name = value.fileName));

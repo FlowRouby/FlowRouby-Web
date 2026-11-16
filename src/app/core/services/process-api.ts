@@ -21,7 +21,16 @@ async function readBlobError(error: HttpErrorResponse): Promise<HttpErrorRespons
 }
 
 function archiveName(disposition: string | null): string {
-  return /filename="?([^";]+)"?/i.exec(disposition ?? '')?.[1]?.trim() || DEFAULT_ARCHIVE_NAME;
+  const header = disposition ?? '';
+  const encoded = /filename\*\s*=\s*[^']*'[^']*'([^;]+)/i.exec(header)?.[1]?.trim();
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded);
+    } catch {
+      // Malformed percent-encoding: use the plain parameter or the default.
+    }
+  }
+  return /filename\s*=\s*"?([^";]+)"?/i.exec(header)?.[1]?.trim() || DEFAULT_ARCHIVE_NAME;
 }
 
 @Service()

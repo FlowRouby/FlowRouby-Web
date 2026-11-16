@@ -43,6 +43,7 @@ export class BpmnModeler {
   /** True while a whole diagram is being loaded, so that loading is not reported as a user edit. */
   #loading = false;
   readonly #editListeners = new Set<() => void>();
+  readonly #loadListeners = new Set<() => void>();
   /** Markers this service added, so they can be removed without scanning the canvas. */
   #markers = new Map<string, string>();
   #focused?: string;
@@ -107,6 +108,14 @@ export class BpmnModeler {
     this.#editListeners.add(listener);
   }
 
+  /**
+   * Calls `listener` synchronously when a diagram load starts (a file import or a canvas attach), before the
+   * old diagram is replaced, so consumers can drop anything that describes the previous diagram.
+   */
+  onLoad(listener: () => void): void {
+    this.#loadListeners.add(listener);
+  }
+
   hasElement(id: string): boolean {
     return this.#element(id) !== undefined;
   }
@@ -153,6 +162,7 @@ export class BpmnModeler {
   /** Runs a load, hiding its command stack reset from edit listeners and dropping markers of the old diagram. */
   async #loadDiagram(load: () => Promise<unknown> | undefined): Promise<void> {
     this.#loading = true;
+    this.#loadListeners.forEach((listener) => listener());
     try {
       await load();
     } finally {

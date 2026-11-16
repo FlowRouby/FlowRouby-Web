@@ -47,6 +47,17 @@ export class ImportAnalysis {
     this.#modeler.onEdited(() => {
       if (this.#status() !== 'idle') this.#stale.set(true);
     });
+    this.#modeler.onLoad(() => this.#reset());
+  }
+
+  /** Forgets everything about the previous diagram and ignores any request still in flight. */
+  #reset(): void {
+    this.#latest++;
+    this.#setDiagnostics([]);
+    this.#backendSupported.set(false);
+    this.#failure.set(null);
+    this.#stale.set(false);
+    this.#status.set('idle');
   }
 
   /** Imports a user file and replaces any previous result. Sends the original file so `line` matches it. */

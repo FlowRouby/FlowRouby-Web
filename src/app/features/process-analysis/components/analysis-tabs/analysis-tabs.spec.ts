@@ -76,6 +76,11 @@ describe('AnalysisTabs', () => {
       const panel = root.querySelector('[role="tabpanel"]');
       expect(panel?.getAttribute('aria-labelledby')).toBe(tabs()[0].id);
       expect(tabs()[0].getAttribute('aria-controls')).toBe(panel?.id);
+      expect(tabs().slice(1).map((t) => t.getAttribute('aria-controls'))).toEqual([null, null, null]);
+      for (const tab of tabs()) {
+        const controls = tab.getAttribute('aria-controls');
+        if (controls) expect(root.querySelector('#' + controls)).toBeTruthy();
+      }
       expect(root.querySelector('app-diagnostics-panel')).toBeTruthy();
     });
 

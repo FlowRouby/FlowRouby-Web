@@ -1,7 +1,7 @@
 <div class="flex flex-wrap items-center justify-between gap-2">
   <div role="tablist" aria-label="Vistas del análisis" class="flex gap-1" (keydown)="onKey($event)">
     @for (tab of tabs; track tab.id) {
-      <button type="button" role="tab" [id]="'analysis-tab-' + tab.id" [attr.aria-selected]="active() === tab.id" [attr.aria-controls]="'analysis-panel-' + tab.id" [attr.tabindex]="active() === tab.id ? 0 : -1" class="rounded-control border border-transparent px-3 py-1 text-sm hover:bg-primary-soft aria-selected:border-border aria-selected:bg-primary-soft aria-selected:font-semibold aria-selected:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="select(tab.id)">{{ tab.label }}</button>
+      <button type="button" role="tab" [id]="'analysis-tab-' + tab.id" [attr.aria-selected]="active() === tab.id" [attr.aria-controls]="active() === tab.id ? 'analysis-panel-' + tab.id : null" [attr.tabindex]="active() === tab.id ? 0 : -1" class="rounded-control border border-transparent px-3 py-1 text-sm hover:bg-primary-soft aria-selected:border-border aria-selected:bg-primary-soft aria-selected:font-semibold aria-selected:text-primary focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="select(tab.id)">{{ tab.label }}</button>
     }
   </div>
 
@@ -20,7 +20,7 @@
 
 @for (tab of tabs; track tab.id) {
   @if (active() === tab.id) {
-    <div role="tabpanel" [id]="'analysis-panel-' + tab.id" [attr.aria-labelledby]="'analysis-tab-' + tab.id" tabindex="0" class="min-h-0 flex-1 overflow-y-auto">
+    <div role="tabpanel" [id]="'analysis-panel-' + tab.id" [attr.aria-labelledby]="'analysis-tab-' + tab.id" tabindex="0" class="min-h-0 flex-1 overflow-y-auto" [class.flex]="tab.id === 'ruby'" [class.flex-col]="tab.id === 'ruby'">
       @switch (tab.id) {
         @case ('diagnostics') {
           <app-diagnostics-panel />
