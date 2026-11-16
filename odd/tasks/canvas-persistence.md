@@ -35,7 +35,7 @@ Reloading the page always starts from the empty diagram, so an imported, sample 
 - [x] P1 (delegated): `BpmnModeler.clear()` and `DiagramStorage`, with tests.
 - [x] P2 (delegated): save on load and on edit, restore on start, with tests.
 - [x] P3 (delegated): "Limpiar" button with confirmation, with tests.
-- [ ] P4 (parent): live browser check (reload keeps the diagram and its analysis; clear empties canvas, analysis and storage).
+- [x] P4 (parent): live browser check (reload keeps the diagram and its analysis; clear empties canvas, analysis and storage).
 
 Route: one delegated writer (2+ non-trivial files). TDD: off, ordinary checks. Runner: `pnpm test --watch=false`, `pnpm build`.
 
@@ -51,4 +51,6 @@ Route: one delegated writer (2+ non-trivial files). TDD: off, ordinary checks. R
 - P2 `fe15fa8`: `DiagramLoader` (load, debounced save on edit, restore, clear) used by the toolbar. Restore is triggered from `BpmnCanvas` right after `attach`. 35 files, 461 tests passed.
 - P3 `5e49c56`: "Limpiar" button with confirmation. 35 files, 465 tests passed.
 - `pnpm build` succeeded after each task.
-- P4 (live browser check): pending.
+- P4 (live browser check, parent, against the running backend): an imported file and its diagnostics survive a reload; a sample replaces the stored diagram; deleting a task is saved and survives a reload; "Limpiar" cancelled changes nothing; confirmed, it leaves the empty diagram, the idle analysis and no stored diagram, also after a reload. The native dialog text was observed; both answers were driven by stubbing `window.confirm`.
+- Review: RDD off; assessed `medium` (692 changed lines); writer self-verification plus parent spot check (465 tests passed).
+- Not checked live: `localStorage` unavailable (unit tests only).
