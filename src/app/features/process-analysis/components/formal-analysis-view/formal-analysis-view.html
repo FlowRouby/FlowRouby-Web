@@ -42,6 +42,7 @@
       <span class="text-content-muted">Función de transición parcial Q × Σ → Q, en la tabla siguiente. Una celda vacía significa que no hay transición.</span>
     </dd>
   </dl>
+  <app-dfa-diagram class="mb-3" [dfa]="dfa()" [loops]="loops()" />
   <div class="overflow-x-auto">
     <table aria-label="Tabla de transiciones del DFA" class="text-left">
       <thead class="text-content-muted">
