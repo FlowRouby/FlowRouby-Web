@@ -6,6 +6,7 @@ import { LOOP_RESULT, XOR_RESULT } from '../../../../core/testing/compile-fixtur
 import { BpmnModeler } from '../../../process-editor/services/bpmn-modeler';
 import { CompileAnalysis, type CompileStatus } from '../../services/compile-analysis';
 import { SimulationAnalysis } from '../../services/simulation-analysis';
+import { TraceValidation } from '../../services/trace-validation';
 import { ImportAnalysis, type ImportStatus } from '../../services/import-analysis';
 import { AnalysisTabs } from './analysis-tabs';
 
@@ -65,6 +66,10 @@ describe('AnalysisTabs', () => {
           provide: SimulationAnalysis,
           useValue: { status: signal('idle'), result: signal(null), failure: signal(null), inputText: signal(''), inputInvalid: signal(false), canSimulate: signal(true), pathShown: signal(false), setInput: vi.fn(), simulate: vi.fn(), clearPath: vi.fn() },
         },
+        {
+          provide: TraceValidation,
+          useValue: { status: signal('idle'), result: signal(null), failure: signal(null), inputText: signal(''), inputKind: signal('symbols'), canValidate: signal(true), pathShown: signal(false), setInput: vi.fn(), setInputKind: vi.fn(), validate: vi.fn(), clearPath: vi.fn() },
+        },
         { provide: BpmnModeler, useValue: modeler },
       ],
     }).compileComponents();
@@ -76,12 +81,12 @@ describe('AnalysisTabs', () => {
   describe('tabs', () => {
     it('exposes an accessible tablist with the diagnostics tab selected first', () => {
       expect(root.querySelector('[role="tablist"]')?.getAttribute('aria-label')).toBeTruthy();
-      expect(tabs().map((t) => t.textContent?.trim())).toEqual(['Diagnósticos', 'FlowSpec', 'Análisis formal', 'Ruby', 'Simulación']);
+      expect(tabs().map((t) => t.textContent?.trim())).toEqual(['Diagnósticos', 'FlowSpec', 'Análisis formal', 'Ruby', 'Simulación', 'Validar cadena']);
       expect(selectedTab()).toBe('Diagnósticos');
       const panel = root.querySelector('[role="tabpanel"]');
       expect(panel?.getAttribute('aria-labelledby')).toBe(tabs()[0].id);
       expect(tabs()[0].getAttribute('aria-controls')).toBe(panel?.id);
-      expect(tabs().slice(1).map((t) => t.getAttribute('aria-controls'))).toEqual([null, null, null, null]);
+      expect(tabs().slice(1).map((t) => t.getAttribute('aria-controls'))).toEqual([null, null, null, null, null]);
       for (const tab of tabs()) {
         const controls = tab.getAttribute('aria-controls');
         if (controls) expect(root.querySelector('#' + controls)).toBeTruthy();
@@ -90,7 +95,7 @@ describe('AnalysisTabs', () => {
     });
 
     it('only the selected tab is in the tab order', () => {
-      expect(tabs().map((t) => t.getAttribute('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1']);
+      expect(tabs().map((t) => t.getAttribute('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1', '-1']);
     });
 
     it('switches on click', async () => {
@@ -107,11 +112,11 @@ describe('AnalysisTabs', () => {
       expect(focus).toHaveBeenCalled();
       await key('ArrowLeft');
       await key('ArrowLeft');
-      expect(selectedTab()).toBe('Simulación');
+      expect(selectedTab()).toBe('Validar cadena');
       await key('ArrowRight');
       expect(selectedTab()).toBe('Diagnósticos');
       await key('End');
-      expect(selectedTab()).toBe('Simulación');
+      expect(selectedTab()).toBe('Validar cadena');
       await key('Home');
       expect(selectedTab()).toBe('Diagnósticos');
     });
@@ -150,6 +155,14 @@ describe('AnalysisTabs', () => {
       expect(selectedTab()).toBe('Simulación');
       expect(root.querySelector('app-simulation-view textarea')).toBeTruthy();
       expect(root.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe('analysis-tab-simulation');
+    });
+
+    it('shows the trace validation view in its own tab, without a compile result', async () => {
+      named('Validar cadena').click();
+      await settle();
+      expect(selectedTab()).toBe('Validar cadena');
+      expect(root.querySelector('app-trace-validation-view input')).toBeTruthy();
+      expect(root.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe('analysis-tab-trace');
     });
 
     it('asks to compile when there is no result yet', async () => {

@@ -6,6 +6,7 @@ import type { ApiError } from '../models/api-error';
 import type { ImportResult } from '../models/import-result';
 import { XOR_RESULT } from '../testing/compile-fixtures';
 import { INVALID_INPUT_DATA_BODY, SIMULATION_WITH_INPUT } from '../testing/simulation-fixtures';
+import { INVALID_TRACE_BODY, TRACE_ACCEPTED, TRACE_NO_TRANSITION } from '../testing/trace-validation-fixtures';
 import { ProcessApi } from './process-api';
 
 const URL = `${environment.apiUrl}/api/v1/processes/import`;
@@ -162,6 +163,71 @@ describe('ProcessApi', () => {
       );
       api.simulate(file()).subscribe({ error: (e: ApiError) => errors.push(e) });
       http.expectOne(SIMULATE_URL).error(new ProgressEvent('error'));
+
+      expect(errors.map((e) => e.kind)).toEqual(['diagnostics', 'network']);
+    });
+  });
+
+  describe('validateTrace', () => {
+    const VALIDATE_URL = `${environment.apiUrl}/api/v1/processes/validate-trace`;
+    const trace = ['start_1', 'task_1', 'end_1'];
+
+    it('sends the trace as a JSON string in `trace` for symbols and returns the typed 200', () => {
+      let received: unknown;
+      api.validateTrace(file(), trace, 'symbols').subscribe((value) => (received = value));
+
+      const request = http.expectOne(VALIDATE_URL);
+      expect(request.request.method).toBe('POST');
+      const body = request.request.body as FormData;
+      expect(body.getAll('file')).toHaveLength(1);
+      expect(body.getAll('trace')).toEqual([JSON.stringify(trace)]);
+      expect(body.has('bpmn_trace')).toBe(false);
+      request.flush(TRACE_ACCEPTED);
+
+      expect(received).toEqual(TRACE_ACCEPTED);
+    });
+
+    it('sends the trace in `bpmn_trace` and never in `trace` for diagram ids', () => {
+      api.validateTrace(file(), ['Start', 'End'], 'bpmn-ids').subscribe();
+
+      const body = http.expectOne(VALIDATE_URL).request.body as FormData;
+      expect(body.getAll('bpmn_trace')).toEqual(['["Start","End"]']);
+      expect(body.has('trace')).toBe(false);
+    });
+
+    it('sends an empty trace as an empty JSON array', () => {
+      api.validateTrace(file(), [], 'symbols').subscribe();
+
+      expect((http.expectOne(VALIDATE_URL).request.body as FormData).get('trace')).toBe('[]');
+    });
+
+    it('returns a rejected trace as a normal result', () => {
+      let received: unknown;
+      api.validateTrace(file(), trace, 'symbols').subscribe((value) => (received = value));
+
+      http.expectOne(VALIDATE_URL).flush(TRACE_NO_TRANSITION);
+
+      expect(received).toEqual(TRACE_NO_TRANSITION);
+    });
+
+    it('normalizes the 422 of an invalid trace as a message error', () => {
+      let error: ApiError | undefined;
+      api.validateTrace(file(), trace, 'symbols').subscribe({ error: (e: ApiError) => (error = e) });
+
+      http.expectOne(VALIDATE_URL).flush(INVALID_TRACE_BODY, { status: 422, statusText: 'Unprocessable Entity' });
+
+      expect(error).toMatchObject({ kind: 'message', status: 422 });
+    });
+
+    it('normalizes a 422 with diagnostics and a network failure', () => {
+      const errors: ApiError[] = [];
+      api.validateTrace(file(), trace, 'symbols').subscribe({ error: (e: ApiError) => errors.push(e) });
+      http.expectOne(VALIDATE_URL).flush(
+        { detail: { message: 'x', diagnostics: [{ code: 'NO_END_EVENT' }] } },
+        { status: 422, statusText: 'Unprocessable Entity' },
+      );
+      api.validateTrace(file(), trace, 'symbols').subscribe({ error: (e: ApiError) => errors.push(e) });
+      http.expectOne(VALIDATE_URL).error(new ProgressEvent('error'));
 
       expect(errors.map((e) => e.kind)).toEqual(['diagnostics', 'network']);
     });

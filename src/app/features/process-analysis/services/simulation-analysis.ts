@@ -7,12 +7,11 @@ import { BpmnModeler } from '../../process-editor/services/bpmn-modeler';
 import { parseInputData } from '../models/simulation-input';
 import { pathMarkers } from '../models/simulation-path';
 import { ImportAnalysis } from './import-analysis';
+import { PathHighlight } from './path-highlight';
 
 export type SimulationStatus = 'idle' | 'loading' | 'loaded' | 'failed';
 
 const FILE_NAME = 'diagram.bpmn';
-/** Marker group of the traversed route, independent from the diagnostics. */
-const PATH_GROUP = 'path';
 
 function asApiError(error: unknown): ApiError {
   const known = typeof error === 'object' && error !== null && 'kind' in error;
@@ -28,13 +27,13 @@ export class SimulationAnalysis {
   readonly #api = inject(ProcessApi);
   readonly #modeler = inject(BpmnModeler);
   readonly #analysis = inject(ImportAnalysis);
+  readonly #highlight = inject(PathHighlight);
 
   readonly #status = signal<SimulationStatus>('idle');
   readonly #result = signal<SimulationResult | null>(null);
   readonly #failure = signal<ApiError | null>(null);
   readonly #inputText = signal('');
   readonly #inputInvalid = signal(false);
-  readonly #pathShown = signal(false);
   /** Id of the newest simulation; older responses are ignored. */
   #latest = 0;
 
@@ -45,8 +44,8 @@ export class SimulationAnalysis {
   readonly inputText = this.#inputText.asReadonly();
   /** True when the last attempt was blocked because the text is not a JSON object. */
   readonly inputInvalid = this.#inputInvalid.asReadonly();
-  /** True while the traversed route is highlighted on the canvas. */
-  readonly pathShown = this.#pathShown.asReadonly();
+  /** True while the traversed route of this simulation is highlighted on the canvas. */
+  readonly pathShown = computed(() => this.#highlight.owner() === 'simulation');
   /** Simulation is allowed only for a diagram the backend said it can analyze. */
   readonly canSimulate = computed(() => this.#analysis.supported() && this.#status() !== 'loading');
 
@@ -88,14 +87,12 @@ export class SimulationAnalysis {
 
   /** Removes the route from the canvas; the result stays. */
   clearPath(): void {
-    this.#modeler.applyMarkers(new Map(), PATH_GROUP);
-    this.#pathShown.set(false);
+    this.#highlight.clear('simulation');
   }
 
   #showPath(result: SimulationResult): void {
     const markers = pathMarkers(result.simulation.visited_nodes, result.bpmn_node_ids, this.#modeler);
-    this.#modeler.applyMarkers(markers, PATH_GROUP);
-    this.#pathShown.set(markers.size > 0);
+    this.#highlight.show('simulation', markers);
   }
 
   /** Invalidates any request in flight and clears the previous outcome, including the route on the canvas. */

@@ -28,7 +28,8 @@ describe('SimulationAnalysis', () => {
 
   const flush = () => new Promise((resolve) => setTimeout(resolve));
   const pathCalls = () => modeler.applyMarkers.mock.calls.filter(([, group]) => group === 'path');
-  const lastPath = () => pathCalls().at(-1)![0] as Map<string, string>;
+  /** The route left on the canvas by the last call; no call means this feature never painted one. */
+  const lastPath = () => (pathCalls().at(-1)?.[0] ?? new Map()) as Map<string, string>;
 
   beforeEach(() => {
     vi.resetAllMocks();
