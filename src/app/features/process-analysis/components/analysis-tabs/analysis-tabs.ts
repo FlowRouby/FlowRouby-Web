@@ -11,8 +11,9 @@ import { FlowspecView } from '../flowspec-view/flowspec-view';
 import { FormalAnalysisView } from '../formal-analysis-view/formal-analysis-view';
 import { RubyView } from '../ruby-view/ruby-view';
 import { SimulationView } from '../simulation-view/simulation-view';
+import { TraceValidationView } from '../trace-validation-view/trace-validation-view';
 
-export type AnalysisTab = 'diagnostics' | 'flowspec' | 'formal' | 'ruby' | 'simulation';
+export type AnalysisTab = 'diagnostics' | 'flowspec' | 'formal' | 'ruby' | 'simulation' | 'trace';
 
 const TABS: readonly { id: AnalysisTab; label: string }[] = [
   { id: 'diagnostics', label: 'Diagnósticos' },
@@ -20,10 +21,11 @@ const TABS: readonly { id: AnalysisTab; label: string }[] = [
   { id: 'formal', label: 'Análisis formal' },
   { id: 'ruby', label: 'Ruby' },
   { id: 'simulation', label: 'Simulación' },
+  { id: 'trace', label: 'Validar cadena' },
 ];
 
 @Component({
-  imports: [NgTemplateOutlet, DiagnosticsPanel, DiagnosticList, FlowspecView, FormalAnalysisView, RubyView, SimulationView],
+  imports: [NgTemplateOutlet, DiagnosticsPanel, DiagnosticList, FlowspecView, FormalAnalysisView, RubyView, SimulationView, TraceValidationView],
   selector: 'app-analysis-tabs',
   templateUrl: './analysis-tabs.html',
   host: { class: 'flex min-h-0 flex-col gap-2' },

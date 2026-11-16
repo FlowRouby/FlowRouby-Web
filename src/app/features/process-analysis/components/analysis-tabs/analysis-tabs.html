@@ -28,6 +28,9 @@
         @case ('simulation') {
           <app-simulation-view />
         }
+        @case ('trace') {
+          <app-trace-validation-view />
+        }
         @default {
           @if (result(); as compiled) {
             @switch (tab.id) {

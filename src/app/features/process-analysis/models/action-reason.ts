@@ -7,8 +7,8 @@ export interface ActionGate {
   status(): ImportStatus;
 }
 
-/** Why an action (`compilar`, `simular`) is disabled, decided from the analysis state (never from message text). */
-export function blockedReason(gate: ActionGate, verb: 'compilar' | 'simular'): string | null {
+/** Why an action (`compilar`, `simular`, `validar`) is disabled, decided from the analysis state (never from message text). */
+export function blockedReason(gate: ActionGate, verb: 'compilar' | 'simular' | 'validar'): string | null {
   if (gate.supported()) return null;
   if (gate.stale()) return `El diagrama cambió; vuelva a verificarlo para ${verb}.`;
   switch (gate.status()) {

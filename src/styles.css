@@ -31,6 +31,19 @@ body {
   stroke-width: 4px !important;
 }
 
+/* Element where a validated trace was rejected. Same danger color as an error, but dashed and thicker so it reads
+   differently, and it replaces the route marker on that element. */
+.djs-shape.fr-rejected > .djs-visual > :first-child {
+  stroke: var(--color-danger) !important;
+  stroke-width: 4px !important;
+  stroke-dasharray: 6 3 !important;
+}
+.djs-shape.fr-rejected > .djs-visual > rect:first-child,
+.djs-shape.fr-rejected > .djs-visual > circle:first-child,
+.djs-shape.fr-rejected > .djs-visual > polygon:first-child {
+  fill: color-mix(in srgb, var(--color-danger) 12%, white) !important;
+}
+
 /* Diagnostic markers. bpmn-js adds these classes to the SVG group of an element, outside any component's styles.
    bpmn-js paints shapes with inline styles, so these rules need !important to apply. */
 .djs-element.fr-error > .djs-visual > :first-child {
