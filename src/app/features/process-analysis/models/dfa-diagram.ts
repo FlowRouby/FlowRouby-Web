@@ -44,7 +44,9 @@ const MIN_COLUMN_GAP = 110;
 const CHAR_WIDTH = 7;
 const LABEL_PADDING = 16;
 /** Free space between a label and the circles it sits between. */
-const LABEL_CLEARANCE = 24;
+const LABEL_CLEARANCE = 48;
+/** Where the label of a straight arrow sits along it, from its source (0) to its target (1). */
+const FORWARD_LABEL_AT = 0.3;
 const ENTRY_LENGTH = 30;
 const MARGIN_LEFT = RADIUS + ENTRY_LENGTH + 10;
 const MARGIN_RIGHT = RADIUS + 16;
@@ -144,7 +146,10 @@ export function dfaDiagram(dfa: Dfa, loops: readonly LoopFinding[]): DfaLayout {
     else if (toLayer < fromLayer) direction = 'up';
     else {
       const rows = (rowOf.get(edge.to) ?? 0) - (rowOf.get(edge.from) ?? 0);
-      direction = rows > 0 ? 'right' : 'left';
+      // Arrows going up the column bow left, away from the ones going down. In the last column the left side is where
+      // incoming arrows land, so they bow right too unless that would overlap the opposite arrow.
+      const opposite = Object.values(dfa.transitions[edge.to] ?? {}).includes(edge.from);
+      direction = rows > 0 || (fromLayer === layerCount - 1 && !opposite) ? 'right' : 'left';
       span = Math.abs(rows);
     }
     return { ...edge, direction, span, lane: 0 };
@@ -255,7 +260,9 @@ function geometryOf(
       const uy = (b.y - a.y) / length;
       const p0 = { x: a.x + ux * RADIUS, y: a.y + uy * RADIUS };
       const p1 = { x: b.x - ux * RADIUS, y: b.y - uy * RADIUS };
-      return { path: `M ${fmt(p0)} L ${fmt(p1)}`, labelX: round((p0.x + p1.x) / 2), labelY: round((p0.y + p1.y) / 2) };
+      // Nearer the source than the midpoint: two arrows that cross do so at their midpoints, where labels would collide.
+      const at = (from: number, to: number) => round(from + (to - from) * FORWARD_LABEL_AT);
+      return { path: `M ${fmt(p0)} L ${fmt(p1)}`, labelX: at(p0.x, p1.x), labelY: at(p0.y, p1.y) };
     }
     case 'self': {
       const p0 = onCircle(a, -COS60, -SIN60);
@@ -277,9 +284,9 @@ function geometryOf(
       return { path: cubic(p0, c1, c2, p1), labelX: round((p0.x + p1.x) / 2), labelY: round(0.125 * (p0.y + p1.y) + 0.75 * lane) };
     }
     default: {
-      // Same layer: bow to the right when the arrow goes down the column, to the left when it goes up.
+      // Same layer: bow sideways, leaving and entering the circles on the bowed side.
       const side = edge.direction === 'right' ? 1 : -1;
-      const vertical = edge.direction === 'right' ? SIN45 : -SIN45;
+      const vertical = b.y > a.y ? SIN45 : -SIN45;
       const p0 = onCircle(a, side * SIN45, vertical);
       const p1 = onCircle(b, side * SIN45, -vertical);
       const bow = SIDE_BOW + SIDE_BOW_STEP * (edge.span - 1);

@@ -45,7 +45,7 @@ Show the loop findings of `/compile` in a readable form, and draw the DFA as a s
 - [x] L1 (delegated, on `develop`): typed loop findings rendered like deadlocks, with a real fixture.
 - [x] D1 (delegated, `feature/dfa-diagram`): `dfaDiagram` layout model with tests.
 - [x] D2 (delegated, `feature/dfa-diagram`): `DfaDiagram` component, wired into `formal-analysis-view`, with tests.
-- [ ] D3 (parent): live browser check with samples 01, 03, 04 and 05.
+- [x] D3 (parent): live browser check with samples 01 to 05.
 
 Route: one delegated writer (2+ non-trivial files). TDD: off, ordinary checks. Runner: `pnpm test --watch=false`, `pnpm build`.
 
@@ -63,4 +63,6 @@ Route: one delegated writer (2+ non-trivial files). TDD: off, ordinary checks. R
 - `pnpm test --watch=false` after L1: 26 files, 316 tests passed. After D2: 28 files, 336 tests passed.
 - `pnpm build`: succeeded after L1 and after D2.
 - Note: by construction of the breadth-first layering no edge skips a layer forward, so the layout code for downward lanes is defensive and untested.
-- D3 (live browser check): pending.
+- D3 (live browser check, parent): the five backend samples drawn and inspected. Three defects found and fixed in the follow-up `fix` commit on this branch: labels of crossing arrows collided at the midpoint (labels now sit at 30% of the arrow); a valid loop used the primary colour, which is crimson and read as an error (now the info colour); an upward arrow in the last column bowed into the incoming arrows (now bows right). After the fix: 338 tests passed, build succeeded.
+- Known limit: a backward curve can pass behind a node of the same column as its source (sample 03, behind D3); readable, not fixed.
+- Review: RDD off; assessed `medium` (735 changed lines), writer self-verification plus parent spot check.

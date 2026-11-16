@@ -34,7 +34,7 @@ export class DfaDiagram {
       case 'infinite':
         return 'stroke-danger';
       case 'valid':
-        return 'stroke-primary';
+        return 'stroke-info';
       default:
         return 'stroke-content';
     }
@@ -45,7 +45,7 @@ export class DfaDiagram {
       case 'infinite':
         return 'fill-danger';
       case 'valid':
-        return 'fill-primary';
+        return 'fill-info';
       default:
         return 'fill-content';
     }

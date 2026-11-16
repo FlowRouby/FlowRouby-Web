@@ -65,12 +65,12 @@ describe('DfaDiagram', () => {
     const { root, svg } = await render(XOR_RESULT.formal_analysis.dfa);
 
     expect(svg.querySelectorAll('[data-loop]:not([data-loop=""])')).toHaveLength(0);
-    expect(svg.querySelector('.stroke-primary, .stroke-danger')).toBeNull();
+    expect(svg.querySelector('.stroke-info, .stroke-danger')).toBeNull();
     expect(root.textContent).toContain('Flecha de entrada: estado inicial. Doble círculo: estado de aceptación.');
     expect(root.textContent).not.toContain('Trazo grueso');
   });
 
-  it('draws the states and transitions of a valid loop with the primary colour and a thicker stroke', async () => {
+  it('draws the states and transitions of a valid loop with the info colour and a thicker stroke', async () => {
     const { root, svg } = await render(VALID_LOOP_RESULT.formal_analysis.dfa, VALID_LOOP_RESULT.formal_analysis.diagnostics.valid_loops);
     const circle = (state: string) => svg.querySelector(`g[data-state="${state}"] circle`) as SVGCircleElement;
     const edgePath = (from: string, to: string) =>
@@ -78,12 +78,12 @@ describe('DfaDiagram', () => {
 
     expect(svg.querySelectorAll('g.dfa-node[data-loop="valid"]')).toHaveLength(2);
     expect(svg.querySelectorAll('g.dfa-edge[data-loop="valid"]')).toHaveLength(2);
-    expect(circle('D2').classList).toContain('stroke-primary');
+    expect(circle('D2').classList).toContain('stroke-info');
     expect(circle('D2').getAttribute('stroke-width')).toBe('3');
     expect(circle('D0').classList).toContain('stroke-content');
     expect(circle('D0').getAttribute('stroke-width')).toBe('1.5');
     expect(edgePath('D4', 'D2')?.getAttribute('stroke-width')).toBe('3');
-    expect(edgePath('D2', 'D4')?.classList).toContain('stroke-primary');
+    expect(edgePath('D2', 'D4')?.classList).toContain('stroke-info');
     expect(root.textContent).toContain('Trazo grueso: estados y transiciones de un ciclo.');
   });
 

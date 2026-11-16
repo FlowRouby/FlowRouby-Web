@@ -33,6 +33,28 @@ describe('dfaDiagram', () => {
     expect(diagram.edges.every((e) => e.loop === null)).toBe(true);
   });
 
+  it('keeps the labels of two crossing arrows apart', () => {
+    const diagram = dfaDiagram(
+      dfa({ S: { a: 'A', b: 'B' }, A: { x: 'C', y: 'D' }, B: { x: 'D', y: 'C' }, C: {}, D: {} }),
+      [],
+    );
+    const down = edge(diagram, 'A', 'D');
+    const up = edge(diagram, 'B', 'C');
+
+    expect(node(diagram, 'A').y).toBeLessThan(node(diagram, 'B').y);
+    expect(node(diagram, 'C').y).toBeLessThan(node(diagram, 'D').y);
+    expect(Math.abs(down.labelY - up.labelY)).toBeGreaterThanOrEqual(16);
+  });
+
+  it('bows an arrow going up the last column to the right, away from the incoming arrows', () => {
+    const diagram = dfaDiagram(dfa({ S: { a: 'A', b: 'B' }, A: {}, B: { up: 'A' } }), []);
+    const up = edge(diagram, 'B', 'A');
+
+    expect(node(diagram, 'A').y).toBeLessThan(node(diagram, 'B').y);
+    expect(up.labelX).toBeGreaterThan(node(diagram, 'A').x + diagram.radius);
+    expect(up.labelX).toBeLessThan(diagram.width);
+  });
+
   it('draws adjacent forward edges as straight lines from circle border to circle border', () => {
     const diagram = dfaDiagram(XOR_RESULT.formal_analysis.dfa, []);
     const first = edge(diagram, 'D0', 'D1');
@@ -42,7 +64,9 @@ describe('dfaDiagram', () => {
     expect(first.symbols).toEqual(['start_1']);
     expect(first.label).toBe('start_1');
     expect(first.path).toBe(`M ${a.x + diagram.radius} ${a.y} L ${b.x - diagram.radius} ${b.y}`);
-    expect(first.labelX).toBeCloseTo((a.x + b.x) / 2);
+    // The label sits nearer the source than the midpoint, clear of both circles.
+    expect(first.labelX).toBeGreaterThan(a.x + diagram.radius);
+    expect(first.labelX).toBeLessThan((a.x + b.x) / 2);
     expect(first.labelY).toBeCloseTo(a.y);
     expect(diagram.width).toBeGreaterThan(node(diagram, 'D5').x + diagram.radius);
     expect(diagram.height).toBeGreaterThanOrEqual(node(diagram, 'D4').y + diagram.radius);
