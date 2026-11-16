@@ -47,3 +47,20 @@ export function failureMessage(error: ApiError): string {
       return 'Ocurrió un error inesperado al analizar el diagrama.';
   }
 }
+
+const DEADLOCK_LABELS: Record<string, string> = {
+  GATEWAY_DEADLOCK: 'Bloqueo en una compuerta de convergencia',
+  DEADLOCK_STATE: 'Estado del autómata sin salida',
+};
+
+/** Spanish label for a deadlock entry, chosen by `type`. The backend `message` is secondary detail only. */
+export function deadlockLabel(type: string): string {
+  return Object.hasOwn(DEADLOCK_LABELS, type) ? DEADLOCK_LABELS[type] : 'Bloqueo detectado';
+}
+
+/** Short Spanish notice for a failed ZIP download. */
+export function downloadFailureMessage(error: ApiError): string {
+  return error.kind === 'network'
+    ? failureMessage(error)
+    : 'No se pudo generar el archivo ZIP. Compile el diagrama para ver el detalle del problema.';
+}
