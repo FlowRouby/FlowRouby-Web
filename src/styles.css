@@ -13,3 +13,27 @@ body {
 .djs-container svg:focus {
   outline: none;
 }
+
+/* Diagnostic markers. bpmn-js adds these classes to the SVG group of an element, outside any component's styles.
+   bpmn-js paints shapes with inline styles, so these rules need !important to apply. */
+.djs-element.fr-error > .djs-visual > :first-child {
+  stroke: var(--color-danger) !important;
+  stroke-width: 3px !important;
+}
+.djs-shape.fr-error > .djs-visual > :first-child {
+  fill: var(--color-primary-soft) !important;
+}
+.djs-element.fr-warning > .djs-visual > :first-child {
+  stroke: var(--color-warning) !important;
+  stroke-width: 3px !important;
+}
+.djs-element.fr-info > .djs-visual > :first-child {
+  stroke: var(--color-info) !important;
+  stroke-width: 2px !important;
+  stroke-dasharray: 4 3 !important;
+}
+.djs-element.fr-focus > .djs-outline {
+  visibility: visible;
+  stroke: var(--color-focus-ring) !important;
+  stroke-width: 3px !important;
+}

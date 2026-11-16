@@ -40,7 +40,7 @@ describe('PropertiesPanel', () => {
 
   it('asks to select an element when nothing is selected', async () => {
     selection.set(null);
-    expect((await render()).root.textContent).toContain('Select an element');
+    expect((await render()).root.textContent).toContain('Seleccione un elemento');
   });
 
   it('shows the type, id and name of the selected element', async () => {
@@ -72,24 +72,24 @@ describe('PropertiesPanel', () => {
   });
 
   it('shows the validation error while typing an invalid id', async () => {
-    modeler.validateId.mockReturnValue('ID is already in use.');
+    modeler.validateId.mockReturnValue('El ID ya está en uso.');
     const { root, field, type } = await render();
     await type('element-id', 'Task_Taken', 'input');
 
-    expect(root.querySelector('[role="alert"]')?.textContent).toContain('already in use');
+    expect(root.querySelector('[role="alert"]')?.textContent).toContain('ya está en uso');
     expect(field('element-id').getAttribute('aria-invalid')).toBe('true');
   });
 
   it('shows the error when committing an invalid id', async () => {
-    modeler.updateId.mockReturnValue('ID is required.');
+    modeler.updateId.mockReturnValue('El ID es obligatorio.');
     const { root, type } = await render();
     await type('element-id', '', 'change');
 
-    expect(root.querySelector('[role="alert"]')?.textContent).toContain('required');
+    expect(root.querySelector('[role="alert"]')?.textContent).toContain('obligatorio');
   });
 
   it('clears the error when the selection changes', async () => {
-    modeler.validateId.mockReturnValue('ID is already in use.');
+    modeler.validateId.mockReturnValue('El ID ya está en uso.');
     const { root, type } = await render();
     await type('element-id', 'Task_Taken', 'input');
 

@@ -3,10 +3,10 @@ const NC_NAME = /^[\p{L}_][\p{L}\p{Nd}._\-\u00B7\p{M}]*$/u;
 
 /** Returns why `id` cannot be used, or `null` when it is valid. */
 export function validateElementId(id: string, isTaken: (id: string) => boolean): string | null {
-  if (!id) return 'ID is required.';
+  if (!id) return 'El ID es obligatorio.';
   if (!NC_NAME.test(id)) {
-    return 'ID must start with a letter or underscore and contain only letters, digits, hyphens, underscores and periods.';
+    return 'El ID debe comenzar con una letra o un guion bajo y contener solo letras, dígitos, guiones, guiones bajos y puntos.';
   }
-  if (isTaken(id)) return 'ID is already in use.';
+  if (isTaken(id)) return 'El ID ya está en uso.';
   return null;
 }

@@ -1,10 +1,11 @@
 import { Component, signal } from '@angular/core';
+import { DiagnosticsPanel } from '../../process-analysis/components/diagnostics-panel/diagnostics-panel';
 import { BpmnCanvas } from '../components/bpmn-canvas/bpmn-canvas';
 import { EditorToolbar } from '../components/editor-toolbar/editor-toolbar';
 import { PropertiesPanel } from '../components/properties-panel/properties-panel';
 
 @Component({
-  imports: [EditorToolbar, BpmnCanvas, PropertiesPanel],
+  imports: [EditorToolbar, BpmnCanvas, PropertiesPanel, DiagnosticsPanel],
   selector: 'app-process-editor-page',
   styleUrl: './process-editor-page.css',
   templateUrl: './process-editor-page.html',

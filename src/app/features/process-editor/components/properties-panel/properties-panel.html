@@ -1,10 +1,10 @@
 <div class="p-4">
-  <h2 class="text-sm font-semibold">Properties</h2>
+  <h2 class="text-sm font-semibold">Propiedades</h2>
 
   @if (element(); as selected) {
     <div class="mt-3 space-y-3 text-sm">
       <dl>
-        <dt class="text-content-muted">Type</dt>
+        <dt class="text-content-muted">Tipo</dt>
         <dd>{{ selected.type }}</dd>
       </dl>
 
@@ -29,7 +29,7 @@
       </div>
 
       <div>
-        <label for="element-name" class="text-content-muted">Name</label>
+        <label for="element-name" class="text-content-muted">Nombre</label>
         <input
           #name
           id="element-name"
@@ -41,6 +41,6 @@
       </div>
     </div>
   } @else {
-    <p class="mt-1 text-sm text-content-muted">Select an element to see its properties.</p>
+    <p class="mt-1 text-sm text-content-muted">Seleccione un elemento para ver sus propiedades.</p>
   }
 </div>
