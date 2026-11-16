@@ -42,7 +42,7 @@ already exposes `/import`, `/compile` and `/simulate`.
 
 ## Tasks
 
-- [ ] T1 — API foundation: environment base URL, `provideHttpClient`, diagnostic and `/import`
+- [x] T1 — API foundation: environment base URL, `provideHttpClient`, diagnostic and `/import`
   models, API service with `importProcess`, normalization of both 422 shapes. Remove the stale
   proxy (pointed at port 8085). Route: delegated direct (writer trigger: 2+ non-trivial files).
 - [ ] T2 — Load file → canvas + `/import`; diagnostics panel with canvas highlight by `elementId`
@@ -63,6 +63,13 @@ already exposes `/import`, `/compile` and `/simulate`.
   list detail match the contract. CORS allows `http://localhost:4200` and exposes
   `Content-Disposition`.
 
+- T1 (commit `3c0f89c`): `pnpm test --watch=false` 9 files / 37 tests passed (writer run and parent
+  re-run); `pnpm build` succeeded. Risk assessment: medium (`configuration_change` in
+  `angular.json`), 412 changed lines; review not run because receipt-driven development is off.
+  Exports: `Diagnostic`, `ImportResult` and document types (`core/models`), `ApiError` and
+  `toApiError` (`core/models/api-error.ts`), `ProcessApi.importProcess` (`core/services/process-api.ts`).
+
 ## Progress and next step
 
-Next: T1.
+T1 done. Running count: 412 changed lines, above the delivery budget; the chain strategy must be
+chosen before planning a pull request. Next: T2, after user confirmation.
