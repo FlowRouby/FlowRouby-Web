@@ -71,6 +71,79 @@ describe('EditorToolbar', () => {
     });
   });
 
+  describe('clearing the diagram', () => {
+    const clearButton = () => [...root().querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Limpiar')!;
+    let confirm: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(async () => {
+      confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+      loader.clear.mockResolvedValue(undefined);
+      await create();
+      fixture.detectChanges();
+    });
+
+    afterEach(() => confirm.mockRestore());
+
+    it('is placed after the sample selector and before the divider', () => {
+      const children = [...root().firstElementChild!.children];
+      expect(children.indexOf(clearButton())).toBe(children.indexOf(select()) + 1);
+      expect(children[children.indexOf(clearButton()) + 1].tagName).toBe('SPAN');
+    });
+
+    it('asks for confirmation and clears the diagram when confirmed', async () => {
+      clearButton().click();
+      await fixture.whenStable();
+
+      expect(confirm).toHaveBeenCalledWith('¿Limpiar el diagrama? Se perderá lo que no se haya exportado.');
+      expect(loader.clear).toHaveBeenCalledTimes(1);
+    });
+
+    it('changes nothing when the user cancels', async () => {
+      confirm.mockReturnValue(false);
+      const pending = new Subject<string>();
+      sampleApi.xml.mockReturnValue(pending);
+      choose('01-secuencial');
+      fixture.detectChanges();
+
+      clearButton().click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(loader.clear).not.toHaveBeenCalled();
+      expect(select().disabled).toBe(true);
+
+      pending.next('<sample/>');
+      pending.complete();
+      await vi.waitFor(() => expect(loader.load).toHaveBeenCalledTimes(1));
+    });
+
+    it('cancels a sample still loading and hides the sample error once confirmed', async () => {
+      sampleApi.xml.mockReturnValueOnce(throwError(() => ({ kind: 'network', status: 0 }) satisfies ApiError));
+      choose('01-secuencial');
+      await vi.waitFor(() => {
+        fixture.detectChanges();
+        expect(alert()).not.toBeNull();
+      });
+      const pending = new Subject<string>();
+      sampleApi.xml.mockReturnValue(pending);
+      choose('02-decision-xor');
+
+      clearButton().click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      pending.next('<late/>');
+      pending.complete();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(alert()).toBeNull();
+      expect(select().disabled).toBe(false);
+      expect(select().value).toBe('');
+      expect(loader.load).not.toHaveBeenCalled();
+      expect(loader.clear).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('sample catalog', () => {
     it('lists the catalog entries by name after a placeholder', async () => {
       await create();

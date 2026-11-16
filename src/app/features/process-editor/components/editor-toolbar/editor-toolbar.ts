@@ -76,6 +76,14 @@ export class EditorToolbar {
     select.value = '';
   }
 
+  /** Empties the canvas, the analysis and the kept diagram, after the user confirms. */
+  protected async clearDiagram(select: HTMLSelectElement): Promise<void> {
+    if (!window.confirm('¿Limpiar el diagrama? Se perderá lo que no se haya exportado.')) return;
+    this.#supersedeSampleLoad();
+    select.value = '';
+    await this.#loader.clear();
+  }
+
   protected async exportFile(): Promise<void> {
     const xml = await this.#modeler.exportXml();
     const url = URL.createObjectURL(new Blob([xml], { type: 'application/xml' }));

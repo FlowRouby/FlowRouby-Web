@@ -21,6 +21,7 @@
   @if (sampleFailed()) {
     <span role="alert" class="text-sm text-danger">No se pudo cargar el ejemplo.</span>
   }
+  <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="clearDiagram(sample)">Limpiar</button>
   <span class="mx-2 h-5 w-px bg-border"></span>
   <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="zoomOut()" aria-label="Alejar">−</button>
   <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="zoomIn()" aria-label="Acercar">+</button>
