@@ -13,7 +13,6 @@ interface Canvas {
   zoom(level: number | 'fit-viewport', center?: 'auto'): number;
   addMarker(element: BpmnElement, marker: string): void;
   removeMarker(element: BpmnElement, marker: string): void;
-  scrollToElement(element: BpmnElement): void;
 }
 
 interface ElementRegistry {
@@ -153,7 +152,10 @@ export class BpmnModeler {
     return outgoing.find((connection) => connection.target?.id === targetId)?.id ?? null;
   }
 
-  /** Marks, selects and scrolls to the element. Returns false, touching nothing, when it is not on the canvas. */
+  /**
+   * Marks and selects the element without moving the viewport, so the diagram stays where the user left it.
+   * Returns false, touching nothing, when it is not on the canvas.
+   */
   focusElement(id: string): boolean {
     const element = this.#element(id);
     if (!element) return false;
@@ -161,7 +163,6 @@ export class BpmnModeler {
     this.#canvas?.addMarker(element, FOCUS_MARKER);
     this.#focused = element;
     this.#modeler?.get<Selection>('selection').select(element);
-    this.#canvas?.scrollToElement(element);
     return true;
   }
 

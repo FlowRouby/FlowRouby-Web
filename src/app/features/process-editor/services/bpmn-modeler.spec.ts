@@ -184,12 +184,12 @@ describe('BpmnModeler', () => {
       });
     });
 
-    it('focuses an element by marking, selecting and scrolling to it', () => {
+    it('focuses an element by marking and selecting it, without moving the viewport', () => {
       expect(service.focusElement('Task_1')).toBe(true);
 
       expect(fake.canvas.addMarker).toHaveBeenCalledWith(expect.objectContaining({ id: 'Task_1' }), 'fr-focus');
       expect(fake.selection.select).toHaveBeenCalledWith(fake.elements.get('Task_1'));
-      expect(fake.canvas.scrollToElement).toHaveBeenCalledWith(fake.elements.get('Task_1'));
+      expect(fake.canvas.scrollToElement).not.toHaveBeenCalled();
     });
 
     it('moves the focus marker from the previous element to the new one', () => {
