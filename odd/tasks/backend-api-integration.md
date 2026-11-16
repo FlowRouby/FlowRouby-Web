@@ -45,7 +45,7 @@ already exposes `/import`, `/compile` and `/simulate`.
 - [x] T1 — API foundation: environment base URL, `provideHttpClient`, diagnostic and `/import`
   models, API service with `importProcess`, normalization of both 422 shapes. Remove the stale
   proxy (pointed at port 8085). Route: delegated direct (writer trigger: 2+ non-trivial files).
-- [ ] T2 — Load file → canvas + `/import`; diagnostics panel with canvas highlight by `elementId`
+- [x] T2 — Load file → canvas + `/import`; diagnostics panel with canvas highlight by `elementId`
   and `line`.
 - [ ] T3 — `supported` gates compile/simulate; compile view (FlowSpec, formal analysis, Ruby files)
   and ZIP download.
@@ -80,4 +80,21 @@ Delivery: stacked PRs to `develop`, one per task (user asked for PR 1 right afte
 T2 decisions (user, 2026-11-15): diagnostic messages and diagnostics panel copy in Spanish
 (neutral), translated by `code`; the rest of the UI stays in English. Route: delegated direct.
 
-Next: T2 in progress.
+T2 evidence (2026-11-16), commits `ae9f500` (modeler markers, 220 lines), `9e4fc68` (import state
+and message catalog, 441), `ae5fbaf` (panel and wiring, 404):
+
+- `pnpm test --watch=false`: 13 files / 96 tests passed; `pnpm build` succeeded.
+- Browser check against the live backend: diagram with a `subProcess` and a disconnected task shows
+  two warnings (one blocking) and one info, `supported: false` notice, markers on `Sub` and `Lonely`,
+  focus on click, stale notice after a rename and re-check; a file without `endEvent` shows the 422
+  error with `line` and no interactive item; with the backend down the diagram still renders and the
+  panel shows the connection notice.
+- Fix found in the browser check: bpmn-js paints shapes with inline styles, so the marker rules need
+  `!important`.
+- Risk assessment: high (`process_boundary` heuristic on `import-analysis.spec.ts`), 1065 changed
+  lines; receipt-driven development is off, so an independent verifier ran instead of a review.
+- T2 is three work units; planned as PR 2a/2b/2c stacked on PR 1 (not pushed yet).
+
+Open item for T3: a diagram drawn from scratch (no file loaded) has no way to be checked yet.
+
+Next: T3, after user confirmation.
