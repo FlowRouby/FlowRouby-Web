@@ -72,8 +72,8 @@ describe('FormalAnalysisView', () => {
     expect(values[0]).toContain('{D0, D1, D2, D3, D4, D5, D6}');
     expect(values[2]).toContain('D0');
     expect(values[3]).toContain('{D5, D6}');
-    const alphabet = [...definition.querySelectorAll('dd')[1].querySelectorAll('app-node-ref')].map((ref) => ref.textContent?.trim());
-    expect(alphabet).toEqual(['start_1 · Start', 'task_1 · Review', 'task_2 · Notify', 'task_3 · Reject', 'end_1 · EndOk', 'end_2 · EndNo']);
+    expect(values[1]).toContain('{start_1, task_1, task_2, task_3, end_1, end_2}');
+    expect(definition.querySelector('app-node-ref')).toBeNull();
   });
 
   it('shows a symbol with its BPMN id as a button that focuses the element', async () => {

@@ -23,13 +23,9 @@
       <span class="font-mono">{{ setOf(order().states) }}</span>
     </dd>
     <dt class="font-mono">Σ</dt>
-    <dd class="flex flex-wrap items-baseline gap-1">
-      <span class="text-content-muted">Alfabeto:</span>
-      @for (symbol of order().alphabet; track symbol) {
-        <app-node-ref [symbol]="symbol" />
-      } @empty {
-        <span class="font-mono">∅</span>
-      }
+    <dd>
+      <span class="text-content-muted">Alfabeto:</span>&ngsp;
+      <span class="font-mono">{{ setOf(order().alphabet) }}</span>
     </dd>
     <dt class="font-mono">q₀</dt>
     <dd>
