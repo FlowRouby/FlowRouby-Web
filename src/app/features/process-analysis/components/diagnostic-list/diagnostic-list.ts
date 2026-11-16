@@ -11,7 +11,7 @@ import { SEVERITY_LABELS } from '../../models/diagnostic-severity';
       @for (item of diagnostics(); track $index) {
         <li class="rounded-control border border-border px-3 py-2">
           <span class="mr-2 inline-block rounded-control border border-border px-1.5 text-xs font-semibold">{{ labels[item.severity] }}</span>
-          <span>{{ messageOf(item.code) }}</span>
+          <span>{{ messageOf(item.code, item.elementType) }}</span>
           @if (item.elementId) {
             <span class="mt-1 block font-mono text-xs text-content-muted">{{ item.elementType ? item.elementType + ' · ' : '' }}{{ item.elementId }}</span>
           }

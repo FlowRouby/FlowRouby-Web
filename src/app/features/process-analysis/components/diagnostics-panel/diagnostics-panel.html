@@ -84,7 +84,7 @@
   @if (item.blocksAnalysis) {
     <span class="mr-2 inline-block rounded-control bg-surface-muted px-1.5 text-xs font-semibold">Análisis bloqueado</span>
   }
-  <span>{{ messageOf(item.code) }}</span>
+  <span>{{ messageOf(item.code, item.elementType) }}</span>
   <span class="mt-1 block text-xs text-content-muted">
     @if (item.elementId) {
       <span class="font-mono">{{ item.elementType ? item.elementType + ' · ' : '' }}{{ item.elementId }}</span>

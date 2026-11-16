@@ -39,6 +39,16 @@ describe('analysis messages', () => {
     expect(diagnosticMessage('constructor')).toBe(FALLBACK);
   });
 
+  it('explains that an ignored BPMNDiagram is the visual layout, and keeps the general text for other elements', () => {
+    const general = diagnosticMessage('IGNORED_ELEMENT');
+
+    expect(diagnosticMessage('IGNORED_ELEMENT', 'BPMNDiagram')).toContain('parte visual del diagrama');
+    expect(diagnosticMessage('IGNORED_ELEMENT', 'textAnnotation')).toBe(general);
+    expect(diagnosticMessage('IGNORED_ELEMENT', null)).toBe(general);
+    expect(diagnosticMessage('IGNORED_ELEMENT', 'constructor')).toBe(general);
+    expect(diagnosticMessage('DISCONNECTED_NODE', 'BPMNDiagram')).toBe(diagnosticMessage('DISCONNECTED_NODE'));
+  });
+
   it('describes each failure without diagnostics by kind, never with the raw backend text', () => {
     expect(failureMessage({ kind: 'network', status: 0 })).toContain('conectar');
     expect(failureMessage({ kind: 'validation', status: 422, issues: [] })).toContain('archivo');

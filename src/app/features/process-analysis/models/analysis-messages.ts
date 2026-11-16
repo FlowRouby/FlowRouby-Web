@@ -30,7 +30,18 @@ const FALLBACK_MESSAGE = 'Se detectó una incidencia en el diagrama.';
 
 export const KNOWN_DIAGNOSTIC_CODES = Object.keys(DIAGNOSTIC_MESSAGES);
 
-export function diagnosticMessage(code: string): string {
+/** More precise text for a `code` when the backend also says which kind of element it is about. */
+const ELEMENT_MESSAGES: Record<string, Record<string, string>> = {
+  IGNORED_ELEMENT: {
+    BPMNDiagram:
+      'La parte visual del diagrama (posiciones y tamaños de las figuras) no interviene en el análisis. Es normal en cualquier diagrama dibujado y no requiere ninguna acción.',
+  },
+};
+
+/** Spanish text for a diagnostic, chosen by `code` and, when it helps, by the kind of element. Never by `message`. */
+export function diagnosticMessage(code: string, elementType?: string | null): string {
+  const byElement = Object.hasOwn(ELEMENT_MESSAGES, code) ? ELEMENT_MESSAGES[code] : null;
+  if (byElement && elementType && Object.hasOwn(byElement, elementType)) return byElement[elementType];
   return Object.hasOwn(DIAGNOSTIC_MESSAGES, code) ? DIAGNOSTIC_MESSAGES[code] : FALLBACK_MESSAGE;
 }
 
