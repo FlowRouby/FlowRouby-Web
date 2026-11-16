@@ -32,16 +32,16 @@ describe('ProcessEditorPage', () => {
     expect(root.querySelector('app-editor-toolbar')).toBeTruthy();
     expect(root.querySelector('app-bpmn-canvas')).toBeTruthy();
     expect(root.querySelector('app-properties-panel')).toBeTruthy();
-    expect(root.querySelector('section[aria-label="Analysis"] app-diagnostics-panel')).toBeTruthy();
+    expect(root.querySelector('section[aria-label="Análisis"] app-diagnostics-panel')).toBeTruthy();
   });
 
   it('collapses the properties panel', async () => {
-    await toggle('Properties');
+    await toggle('Propiedades');
     expect(root.querySelector('app-properties-panel')).toBeNull();
   });
 
   it('collapses the analysis panel', async () => {
-    await toggle('Analysis');
-    expect(root.querySelector('section[aria-label="Analysis"]')).toBeNull();
+    await toggle('Análisis');
+    expect(root.querySelector('section[aria-label="Análisis"]')).toBeNull();
   });
 });

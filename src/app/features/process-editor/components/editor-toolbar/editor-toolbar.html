@@ -1,9 +1,9 @@
 <div class="flex items-center gap-2 border-b border-border bg-surface px-4 py-2">
   <input #file type="file" accept=".bpmn,.xml" hidden (change)="importFile(file)" />
-  <button type="button" class="rounded-control bg-primary px-3 py-1.5 text-sm text-on-primary hover:bg-primary-hover" (click)="file.click()">Import</button>
-  <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="exportFile()">Export</button>
+  <button type="button" class="rounded-control bg-primary px-3 py-1.5 text-sm text-on-primary hover:bg-primary-hover" (click)="file.click()">Importar</button>
+  <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="exportFile()">Exportar</button>
   <span class="mx-2 h-5 w-px bg-border"></span>
-  <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="zoomOut()">−</button>
-  <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="zoomIn()">+</button>
-  <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="zoomFit()">Fit</button>
+  <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="zoomOut()" aria-label="Alejar">−</button>
+  <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="zoomIn()" aria-label="Acercar">+</button>
+  <button type="button" class="rounded-control border border-border px-3 py-1.5 text-sm hover:bg-primary-soft focus-visible:outline-2 focus-visible:outline-focus-ring" (click)="zoomFit()">Ajustar</button>
 </div>

@@ -8,14 +8,14 @@ describe('validateElementId', () => {
   });
 
   it('requires a value', () => {
-    expect(validateElementId('', free)).toBe('ID is required.');
+    expect(validateElementId('', free)).toBe('El ID es obligatorio.');
   });
 
   it.each(['1Task', '-Task', 'my task', 'a:b', 'a/b', 'Task#1'])('rejects %s as an invalid NCName', (id) => {
-    expect(validateElementId(id, free)).toContain('must start with a letter or underscore');
+    expect(validateElementId(id, free)).toContain('debe comenzar con una letra o un guion bajo');
   });
 
   it('rejects an id that is already taken', () => {
-    expect(validateElementId('Task_1', (id) => id === 'Task_1')).toBe('ID is already in use.');
+    expect(validateElementId('Task_1', (id) => id === 'Task_1')).toBe('El ID ya está en uso.');
   });
 });
