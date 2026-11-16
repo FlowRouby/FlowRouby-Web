@@ -219,6 +219,35 @@ describe('BpmnModeler', () => {
       expect(listener).toHaveBeenCalledTimes(1);
     });
 
+    describe('clear', () => {
+      it('notifies load listeners synchronously and loads the empty diagram without reporting an edit', async () => {
+        const loaded = vi.fn();
+        const edited = vi.fn();
+        service.onLoad(loaded);
+        service.onEdited(edited);
+
+        const clearing = service.clear();
+
+        expect(loaded).toHaveBeenCalledTimes(1);
+        await clearing;
+        expect(edited).not.toHaveBeenCalled();
+      });
+
+      it('forgets the markers, syncs the selection and fits the zoom', async () => {
+        service.applyMarkers(new Map([['Task_1', 'fr-path']]), 'path');
+        fake.selection.get.mockReturnValueOnce([{ id: 'Task_2', type: 'bpmn:Task', businessObject: {} }] as never);
+        fake.canvas.zoom.mockClear();
+        fake.canvas.removeMarker.mockClear();
+
+        await service.clear();
+        service.applyMarkers(new Map(), 'path');
+
+        expect(fake.canvas.removeMarker).not.toHaveBeenCalled();
+        expect(service.selection()).toEqual({ id: 'Task_2', type: 'bpmn:Task', name: undefined });
+        expect(fake.canvas.zoom).toHaveBeenCalledWith('fit-viewport', 'auto');
+      });
+    });
+
     it('notifies edit listeners on a command stack change, but not while a diagram loads', async () => {
       const listener = vi.fn();
       service.onEdited(listener);

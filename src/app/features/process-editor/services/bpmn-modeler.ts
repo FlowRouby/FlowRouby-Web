@@ -85,6 +85,13 @@ export class BpmnModeler {
     this.zoomFit();
   }
 
+  /** Replaces the diagram with the empty one through the normal load path, so load listeners run. */
+  async clear(): Promise<void> {
+    await this.#loadDiagram(() => this.#modeler?.createDiagram());
+    this.#syncSelection();
+    this.zoomFit();
+  }
+
   async exportXml(): Promise<string> {
     const result = await this.#modeler?.saveXML({ format: true });
     return result?.xml ?? '';
