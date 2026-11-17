@@ -91,7 +91,7 @@ export class SimulationAnalysis {
   }
 
   #showPath(result: SimulationResult): void {
-    const markers = pathMarkers(result.simulation.visited_nodes, result.bpmn_node_ids, this.#modeler);
+    const markers = pathMarkers(result.simulation.step_logs, result.bpmn_node_ids, this.#modeler);
     this.#highlight.show('simulation', markers);
   }
 

@@ -1,3 +1,4 @@
+import type { StepLog } from '../../../core/models/simulation-result';
 import { toCanvasId } from './symbol-nodes';
 
 export const PATH_MARKER = 'fr-path';
@@ -10,25 +11,43 @@ export interface PathCanvas {
 }
 
 /**
- * Markers for the route `visited` (node symbols in execution order) of one simulation response, translated with
- * that response's `bpmnNodeIds`. Marks the visited elements and the connection between each consecutive pair of
- * them. Symbols without a mapping or whose element is not on the canvas are skipped, and a skipped node breaks the
- * chain, so no connection is invented across it. Only ids that exist on the canvas are returned.
+ * Markers for the route of one simulation response, read from its `steps` and translated with that response's
+ * `bpmnNodeIds`. Marks every executed element and the connections the run followed out of each one:
+ *
+ * - a step with `selected_targets` (a gateway) followed exactly the connections to those targets, so a parallel
+ *   split marks all its branches, a waiting join marks none, and an exclusive gateway marks only the chosen one;
+ * - any other step (an event or a task) followed all its outgoing connections.
+ *
+ * A connection is marked only when the element it leads to was executed too. Consecutive steps are not assumed to
+ * be connected: parallel branches run one after the other without a connection between them. Symbols without a
+ * mapping or whose element is not on the canvas are skipped. Only ids that exist on the canvas are returned.
  */
 export function pathMarkers(
-  visited: readonly string[],
+  steps: readonly Pick<StepLog, 'node_id' | 'selected_targets'>[],
   bpmnNodeIds: Readonly<Record<string, string>> | null,
   canvas: PathCanvas,
 ): Map<string, string> {
+  const resolved = new Map<string, string | null>();
+  const toId = (symbol: string): string | null => {
+    if (!resolved.has(symbol)) resolved.set(symbol, toCanvasId(symbol, bpmnNodeIds, (id) => canvas.hasElement(id)));
+    return resolved.get(symbol) ?? null;
+  };
+
   const markers = new Map<string, string>();
-  const ids = visited.map((symbol) => toCanvasId(symbol, bpmnNodeIds, (id) => canvas.hasElement(id)));
-  ids.forEach((id, index) => {
-    if (id === null) return;
-    markers.set(id, PATH_MARKER);
-    const previous = index > 0 ? ids[index - 1] : null;
-    if (previous === null) return;
-    const connection = canvas.connectionBetween(previous, id);
-    if (connection !== null && canvas.hasElement(connection)) markers.set(connection, PATH_MARKER);
-  });
+  for (const step of steps) {
+    const id = toId(step.node_id);
+    if (id !== null) markers.set(id, PATH_MARKER);
+  }
+  const executed = [...markers.keys()];
+
+  for (const step of steps) {
+    const from = toId(step.node_id);
+    if (from === null) continue;
+    const targets = step.selected_targets ? step.selected_targets.map(toId).filter((id) => id !== null && executed.includes(id)) : executed;
+    for (const to of targets) {
+      const connection = canvas.connectionBetween(from, to as string);
+      if (connection !== null && canvas.hasElement(connection)) markers.set(connection, PATH_MARKER);
+    }
+  }
   return markers;
 }
