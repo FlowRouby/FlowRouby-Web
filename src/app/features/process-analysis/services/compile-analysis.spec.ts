@@ -14,7 +14,7 @@ describe('CompileAnalysis', () => {
   let loadStarted: () => void;
   const importStatus = signal<ImportStatus>('loaded');
   const supported = signal(true);
-  const modeler = { onEdited: vi.fn(), onLoad: vi.fn(), exportXml: vi.fn() };
+  const modeler = { onEdited: vi.fn(), onLoad: vi.fn(), exportXml: vi.fn(), applyLabels: vi.fn(), hasElement: vi.fn() };
   const api = { compile: vi.fn(), downloadProject: vi.fn() };
   let compile: CompileAnalysis;
 
@@ -27,6 +27,7 @@ describe('CompileAnalysis', () => {
     modeler.onEdited.mockImplementation((listener: () => void) => (edited = listener));
     modeler.onLoad.mockImplementation((listener: () => void) => (loadStarted = listener));
     modeler.exportXml.mockResolvedValue('<definitions/>');
+    modeler.hasElement.mockReturnValue(true);
     TestBed.configureTestingModule({
       providers: [
         { provide: BpmnModeler, useValue: modeler },
@@ -105,6 +106,57 @@ describe('CompileAnalysis', () => {
       await first;
 
       expect(api.compile).toHaveBeenCalledTimes(1);
+    });
+
+    describe('symbol labels', () => {
+      const lastLabels = () => modeler.applyLabels.mock.lastCall![0] as Map<string, string>;
+
+      it('labels the mapped canvas elements from the result of the compile', async () => {
+        api.compile.mockReturnValue(of(XOR_RESULT));
+
+        await compile.compile();
+
+        expect(lastLabels().get('Review')).toBe('task_1');
+        expect(lastLabels().size).toBe(Object.keys(XOR_RESULT.bpmn_node_ids ?? {}).length);
+        expect(modeler.applyLabels.mock.lastCall![1]).toBe('symbols');
+      });
+
+      it('skips elements that are not on the canvas', async () => {
+        modeler.hasElement.mockImplementation((id: string) => id === 'Review');
+        api.compile.mockReturnValue(of(XOR_RESULT));
+
+        await compile.compile();
+
+        expect([...lastLabels()]).toEqual([['Review', 'task_1']]);
+      });
+
+      it('removes the labels when the diagram is edited, a load starts or a new compile begins', async () => {
+        api.compile.mockReturnValue(of(XOR_RESULT));
+        await compile.compile();
+
+        for (const trigger of [edited, loadStarted]) {
+          await compile.compile();
+          expect(lastLabels().size).toBeGreaterThan(0);
+          trigger();
+          expect(lastLabels().size).toBe(0);
+        }
+
+        await compile.compile();
+        api.compile.mockReturnValue(new Subject());
+        void compile.compile();
+        await flush();
+        expect(lastLabels().size).toBe(0);
+      });
+
+      it('leaves no labels after a failed compile', async () => {
+        api.compile.mockReturnValueOnce(of(XOR_RESULT));
+        await compile.compile();
+        api.compile.mockReturnValue(throwError(() => ({ kind: 'network', status: 0 })));
+
+        await compile.compile();
+
+        expect(lastLabels().size).toBe(0);
+      });
     });
 
     describe('discarding', () => {

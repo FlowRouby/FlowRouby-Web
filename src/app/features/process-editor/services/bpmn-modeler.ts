@@ -8,6 +8,12 @@ const ZOOM_FACTOR = 1.2;
 export const FOCUS_MARKER = 'fr-focus';
 /** Marker group used when the caller does not name one (the diagnostics). */
 export const DEFAULT_MARKER_GROUP = 'diagnostics';
+/** Overlay group used when the caller does not name one. */
+export const DEFAULT_LABEL_GROUP = 'labels';
+/** Global class of the label pill (see `styles.css`): the overlay HTML lives outside Angular. */
+export const LABEL_CLASS = 'fr-symbol-label';
+/** Offset that puts a label just above the top-left corner of its element, clear of the element's own name. */
+const LABEL_POSITION = { top: -16, left: 0 };
 
 interface Canvas {
   zoom(): number;
@@ -26,6 +32,11 @@ interface BpmnElement {
   type: string;
   /** Connections leaving a shape (absent on connections). */
   outgoing?: { id: string; target?: { id: string } }[];
+}
+
+interface Overlays {
+  add(element: BpmnElement | string, type: string, overlay: { position: { top: number; left: number }; html: HTMLElement }): string;
+  remove(id: string): void;
 }
 
 interface Selection {
@@ -69,6 +80,8 @@ export class BpmnModeler {
   readonly #loadListeners = new Set<() => void>();
   /** Markers this service added per group, so they can be removed without scanning the canvas. */
   #markers = new Map<string, Map<BpmnElement, string>>();
+  /** Ids of the overlays this service added per group; bpmn-js drops the overlays themselves when a diagram loads. */
+  #labels = new Map<string, string[]>();
   #focused?: BpmnElement;
   /** Where the properties panel should be shown; kept so it mounts as soon as the modeler exists. */
   #panelHost?: HTMLElement;
@@ -149,6 +162,26 @@ export class BpmnModeler {
     this.#markers.set(group, applied);
   }
 
+  /**
+   * Replaces the text labels of `group` (the previous call for that group) with one small pill per entry, shown just
+   * above the element's top-left corner. Other groups are left untouched, an empty map clears the group, and ids
+   * missing from the canvas are skipped. The pills ignore pointer events, so the element under them stays usable.
+   */
+  applyLabels(labels: ReadonlyMap<string, string>, group: string = DEFAULT_LABEL_GROUP): void {
+    const overlays = this.#overlays;
+    for (const id of this.#labels.get(group) ?? []) overlays?.remove(id);
+    const added: string[] = [];
+    for (const [elementId, text] of labels) {
+      const element = this.#element(elementId);
+      if (!element || !overlays) continue;
+      const html = document.createElement('div');
+      html.className = LABEL_CLASS;
+      html.textContent = text;
+      added.push(overlays.add(element, group, { position: LABEL_POSITION, html }));
+    }
+    this.#labels.set(group, added);
+  }
+
   /** Id of a connection going from `sourceId` to `targetId`, or null when there is none (or an id is unknown). */
   connectionBetween(sourceId: string, targetId: string): string | null {
     const outgoing = this.#element(sourceId)?.outgoing ?? [];
@@ -194,6 +227,10 @@ export class BpmnModeler {
     return this.#modeler?.get<Canvas>('canvas');
   }
 
+  get #overlays(): Overlays | undefined {
+    return this.#modeler?.get<Overlays>('overlays');
+  }
+
   /** Runs a load, hiding its command stack reset from edit listeners and dropping markers of the old diagram. */
   async #loadDiagram(load: () => Promise<unknown> | undefined): Promise<void> {
     this.#loading = true;
@@ -203,6 +240,7 @@ export class BpmnModeler {
     } finally {
       this.#loading = false;
       this.#markers = new Map();
+      this.#labels = new Map();
       this.#focused = undefined;
     }
   }

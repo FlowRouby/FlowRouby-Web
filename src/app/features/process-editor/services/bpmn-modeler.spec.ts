@@ -9,15 +9,18 @@ const fake = (() => {
   const handlers = new Map<string, Handler[]>();
   const canvas = { addMarker: vi.fn(), removeMarker: vi.fn(), scrollToElement: vi.fn(), zoom: vi.fn() };
   const selection = { select: vi.fn() };
+  let overlayCount = 0;
+  const overlays = { add: vi.fn(() => `overlay-${++overlayCount}`), remove: vi.fn() };
   const propertiesPanel = { attachTo: vi.fn(), detach: vi.fn() };
   const services: Record<string, unknown> = {
     canvas,
     selection,
+    overlays,
     propertiesPanel,
     elementRegistry: { get: (id: string) => elements.get(id) },
   };
   const emit = (name: string) => (handlers.get(name) ?? []).forEach((h) => h());
-  return { elements, handlers, canvas, selection, propertiesPanel, services, emit };
+  return { elements, handlers, canvas, selection, overlays, propertiesPanel, services, emit };
 })();
 
 /** Stands in for bpmn-js. Provided through the factory token, so it does not depend on module mocking. */
@@ -168,6 +171,55 @@ describe('BpmnModeler', () => {
       // bpmn-js ignores an element object that left the registry, but throws on an unknown id string.
       expect(fake.canvas.removeMarker).toHaveBeenCalledTimes(1);
       expect(fake.canvas.removeMarker).toHaveBeenCalledWith(element, 'fr-error');
+    });
+
+    describe('labels', () => {
+      const added = (index: number) => fake.overlays.add.mock.calls[index] as unknown as [{ id: string }, string, { position: object; html: HTMLElement }];
+
+      it('adds one text pill above the top-left corner of each element and skips unknown ids', () => {
+        service.applyLabels(new Map([['Task_1', 'task_1'], ['Nope', 'task_9']]), 'symbols');
+
+        expect(fake.overlays.add).toHaveBeenCalledTimes(1);
+        const [element, type, overlay] = added(0);
+        expect(element.id).toBe('Task_1');
+        expect(type).toBe('symbols');
+        expect(overlay.position).toEqual({ top: -16, left: 0 });
+        expect(overlay.html.className).toBe('fr-symbol-label');
+        expect(overlay.html.textContent).toBe('task_1');
+      });
+
+      it('never interprets the text as markup', () => {
+        service.applyLabels(new Map([['Task_1', '<b>x</b>']]));
+
+        expect(added(0)[2].html.children).toHaveLength(0);
+      });
+
+      it('replaces the labels of a group and clears it with an empty map', () => {
+        service.applyLabels(new Map([['Task_1', 'task_1']]), 'symbols');
+        const first = fake.overlays.add.mock.results[0].value;
+
+        service.applyLabels(new Map([['Task_2', 'task_2']]), 'symbols');
+        expect(fake.overlays.remove).toHaveBeenCalledWith(first);
+
+        service.applyLabels(new Map(), 'symbols');
+        expect(fake.overlays.remove).toHaveBeenCalledTimes(2);
+      });
+
+      it('keeps the labels of other groups', () => {
+        service.applyLabels(new Map([['Task_1', 'task_1']]), 'one');
+        service.applyLabels(new Map(), 'two');
+
+        expect(fake.overlays.remove).not.toHaveBeenCalled();
+      });
+
+      it('forgets the labels when a diagram load starts, since bpmn-js drops the overlays itself', async () => {
+        service.applyLabels(new Map([['Task_1', 'task_1']]), 'symbols');
+        await service.importXml('<definitions/>');
+
+        service.applyLabels(new Map(), 'symbols');
+
+        expect(fake.overlays.remove).not.toHaveBeenCalled();
+      });
     });
 
     describe('marker groups', () => {

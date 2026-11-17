@@ -15,6 +15,18 @@ body {
   outline: none;
 }
 
+/* Automaton symbol label of an element (bpmn-js overlay, built outside Angular). It must not catch the pointer, so the
+   element under it stays clickable and draggable. */
+.fr-symbol-label {
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--color-info);
+  color: white;
+  font: 10px/1.2 ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 /* Simulated route. Declared before the diagnostic markers so an element that is also flagged keeps its diagnostic color.
    Not color alone: route shapes get a thicker stroke and a light fill, route connections a thicker line.
    The arrowhead is a shared svg marker that bpmn-js paints itself, so it keeps its color. */
