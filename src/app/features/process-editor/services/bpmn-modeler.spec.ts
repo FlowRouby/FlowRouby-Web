@@ -8,14 +8,16 @@ const fake = (() => {
   const elements = new Map<string, { id: string; type: string; businessObject: object; outgoing?: { id: string; target?: { id: string } }[] }>();
   const handlers = new Map<string, Handler[]>();
   const canvas = { addMarker: vi.fn(), removeMarker: vi.fn(), scrollToElement: vi.fn(), zoom: vi.fn() };
-  const selection = { select: vi.fn(), get: vi.fn(() => []) };
+  const selection = { select: vi.fn() };
+  const propertiesPanel = { attachTo: vi.fn(), detach: vi.fn() };
   const services: Record<string, unknown> = {
     canvas,
     selection,
+    propertiesPanel,
     elementRegistry: { get: (id: string) => elements.get(id) },
   };
   const emit = (name: string) => (handlers.get(name) ?? []).forEach((h) => h());
-  return { elements, handlers, canvas, selection, services, emit };
+  return { elements, handlers, canvas, selection, propertiesPanel, services, emit };
 })();
 
 /** Stands in for bpmn-js. Provided through the factory token, so it does not depend on module mocking. */
@@ -62,6 +64,55 @@ describe('BpmnModeler', () => {
 
     expect(listener).toHaveBeenCalledTimes(1);
     return attaching;
+  });
+
+  describe('properties panel', () => {
+    it('mounts into the host when the modeler already exists', async () => {
+      const host = document.createElement('div');
+      await service.attach(document.createElement('div'));
+
+      service.mountPropertiesPanel(host);
+
+      expect(fake.propertiesPanel.attachTo).toHaveBeenCalledWith(host);
+    });
+
+    it('mounts as soon as the modeler is attached when asked before it exists', async () => {
+      const host = document.createElement('div');
+
+      service.mountPropertiesPanel(host);
+      expect(fake.propertiesPanel.attachTo).not.toHaveBeenCalled();
+      await service.attach(document.createElement('div'));
+
+      expect(fake.propertiesPanel.attachTo).toHaveBeenCalledWith(host);
+    });
+
+    it('does not mount into a host that was unmounted before the modeler existed', async () => {
+      service.mountPropertiesPanel(document.createElement('div'));
+      service.unmountPropertiesPanel();
+      await service.attach(document.createElement('div'));
+
+      expect(fake.propertiesPanel.attachTo).not.toHaveBeenCalled();
+    });
+
+    it('detaches the panel from the page', async () => {
+      await service.attach(document.createElement('div'));
+
+      service.unmountPropertiesPanel();
+
+      expect(fake.propertiesPanel.detach).toHaveBeenCalledTimes(1);
+    });
+
+    it('does nothing after the modeler is destroyed', async () => {
+      await service.attach(document.createElement('div'));
+      service.destroy();
+
+      expect(() => {
+        service.mountPropertiesPanel(document.createElement('div'));
+        service.unmountPropertiesPanel();
+      }).not.toThrow();
+      expect(fake.propertiesPanel.attachTo).not.toHaveBeenCalled();
+      expect(fake.propertiesPanel.detach).not.toHaveBeenCalled();
+    });
   });
 
   describe('with an attached diagram', () => {
@@ -233,9 +284,8 @@ describe('BpmnModeler', () => {
         expect(edited).not.toHaveBeenCalled();
       });
 
-      it('forgets the markers, syncs the selection and fits the zoom', async () => {
+      it('forgets the markers and fits the zoom', async () => {
         service.applyMarkers(new Map([['Task_1', 'fr-path']]), 'path');
-        fake.selection.get.mockReturnValueOnce([{ id: 'Task_2', type: 'bpmn:Task', businessObject: {} }] as never);
         fake.canvas.zoom.mockClear();
         fake.canvas.removeMarker.mockClear();
 
@@ -243,7 +293,6 @@ describe('BpmnModeler', () => {
         service.applyMarkers(new Map(), 'path');
 
         expect(fake.canvas.removeMarker).not.toHaveBeenCalled();
-        expect(service.selection()).toEqual({ id: 'Task_2', type: 'bpmn:Task', name: undefined });
         expect(fake.canvas.zoom).toHaveBeenCalledWith('fit-viewport', 'auto');
       });
     });

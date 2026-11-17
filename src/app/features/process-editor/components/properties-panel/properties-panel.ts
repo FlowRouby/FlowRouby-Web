@@ -1,30 +1,17 @@
-import { Component, inject, linkedSignal } from '@angular/core';
+import { Component, DestroyRef, ElementRef, afterNextRender, inject } from '@angular/core';
 import { BpmnModeler } from '../../services/bpmn-modeler';
 
+/** Hosts the bpmn.io properties panel: fills its container and scrolls, and mounts the panel while it lives. */
 @Component({
   selector: 'app-properties-panel',
-  styleUrl: './properties-panel.css',
-  templateUrl: './properties-panel.html',
+  host: { class: 'block h-full overflow-y-auto' },
+  template: '',
 })
 export class PropertiesPanel {
-  readonly #modeler = inject(BpmnModeler);
-  protected readonly element = this.#modeler.selection;
-
-  /** Cleared every time the selection changes. */
-  protected readonly idError = linkedSignal<unknown, string | null>({
-    source: this.element,
-    computation: () => null,
-  });
-
-  protected rename(name: string): void {
-    this.#modeler.updateName(name);
-  }
-
-  protected checkId(id: string): void {
-    this.idError.set(this.#modeler.validateId(id));
-  }
-
-  protected changeId(id: string): void {
-    this.idError.set(this.#modeler.updateId(id));
+  constructor() {
+    const modeler = inject(BpmnModeler);
+    const host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+    afterNextRender(() => modeler.mountPropertiesPanel(host));
+    inject(DestroyRef).onDestroy(() => modeler.unmountPropertiesPanel());
   }
 }

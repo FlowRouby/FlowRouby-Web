@@ -20,7 +20,7 @@ describe('ProcessEditorPage', () => {
     await TestBed.configureTestingModule({
       imports: [ProcessEditorPage],
       providers: [
-        { provide: BpmnModeler, useValue: { attach: () => {}, destroy: () => {}, selection: signal(null), updateName: () => {}, validateId: () => null, updateId: () => null } },
+        { provide: BpmnModeler, useValue: { attach: () => {}, destroy: () => {}, mountPropertiesPanel: () => {}, unmountPropertiesPanel: () => {} } },
         { provide: DiagramLoader, useValue: { load: async () => true, restore: async () => {}, clear: async () => {} } },
         { provide: CompileAnalysis, useValue: { status: signal('idle'), result: signal(null), failure: signal(null), downloading: signal(false), downloadFailure: signal(null), canCompile: signal(false), canDownload: signal(false), compile: () => {}, download: () => {} } },
         { provide: ImportAnalysis, useValue: { status: signal('idle'), diagnostics: signal([]), failure: signal(null), stale: signal(false), supported: signal(false), rejected: signal(false), recheck: () => {} } },

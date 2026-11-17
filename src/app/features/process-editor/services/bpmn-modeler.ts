@@ -1,7 +1,8 @@
-import { inject, InjectionToken, Service, signal } from '@angular/core';
+import { inject, InjectionToken, Service } from '@angular/core';
 import Modeler from 'bpmn-js/lib/Modeler';
-import { validateElementId } from '../models/element-id';
-import type { SelectedElement } from '../models/selected-element';
+import { BpmnPropertiesPanelModule, BpmnPropertiesProviderModule, CamundaPlatformPropertiesProviderModule } from 'bpmn-js-properties-panel';
+import CamundaBehaviorsModule from 'camunda-bpmn-js-behaviors/lib/camunda-platform';
+import camundaModdle from 'camunda-bpmn-moddle/resources/camunda.json';
 
 const ZOOM_FACTOR = 1.2;
 export const FOCUS_MARKER = 'fr-focus';
@@ -23,28 +24,39 @@ interface ElementRegistry {
 interface BpmnElement {
   id: string;
   type: string;
-  businessObject: { name?: string };
   /** Connections leaving a shape (absent on connections). */
   outgoing?: { id: string; target?: { id: string } }[];
 }
 
 interface Selection {
-  get(): BpmnElement[];
   select(element: BpmnElement): void;
 }
 
-interface Modeling {
-  updateProperties(element: BpmnElement, properties: { id?: string; name?: string }): void;
+interface PropertiesPanelService {
+  attachTo(container: HTMLElement): void;
+  detach(): void;
 }
 
-interface Moddle {
-  ids: { assigned(id: string): unknown };
-}
-
-/** Creates the bpmn-js modeler. A token, so tests can replace bpmn-js without relying on module mocking. */
+/**
+ * Creates the bpmn-js modeler with the official properties panel and its Camunda 7 provider. The panel has no parent
+ * here: it is mounted later through `BpmnModeler.mountPropertiesPanel`, because its host element comes and goes.
+ * A token, so tests can replace bpmn-js without relying on module mocking.
+ */
 export const BPMN_MODELER_FACTORY = new InjectionToken<(container: HTMLElement) => Modeler>(
   'BPMN_MODELER_FACTORY',
-  { factory: () => (container) => new Modeler({ container }) },
+  {
+    factory: () => (container) =>
+      new Modeler({
+        container,
+        additionalModules: [
+          BpmnPropertiesPanelModule,
+          BpmnPropertiesProviderModule,
+          CamundaPlatformPropertiesProviderModule,
+          CamundaBehaviorsModule,
+        ],
+        moddleExtensions: { camunda: camundaModdle },
+      }),
+  },
 );
 
 @Service()
@@ -58,14 +70,12 @@ export class BpmnModeler {
   /** Markers this service added per group, so they can be removed without scanning the canvas. */
   #markers = new Map<string, Map<BpmnElement, string>>();
   #focused?: BpmnElement;
-  readonly #selection = signal<SelectedElement | null>(null);
-
-  /** The single selected element, or null when nothing or several elements are selected. */
-  readonly selection = this.#selection.asReadonly();
+  /** Where the properties panel should be shown; kept so it mounts as soon as the modeler exists. */
+  #panelHost?: HTMLElement;
 
   async attach(container: HTMLElement): Promise<void> {
     this.#modeler = this.#createModeler(container);
-    this.#modeler.on(['selection.changed', 'elements.changed'], () => this.#syncSelection());
+    if (this.#panelHost) this.#panel?.attachTo(this.#panelHost);
     this.#modeler.on('commandStack.changed', () => {
       if (!this.#loading) this.#editListeners.forEach((listener) => listener());
     });
@@ -76,49 +86,34 @@ export class BpmnModeler {
   destroy(): void {
     this.#modeler?.destroy();
     this.#modeler = undefined;
-    this.#selection.set(null);
+  }
+
+  /** Shows the properties panel inside `host`. Before the modeler exists it mounts as soon as it does. */
+  mountPropertiesPanel(host: HTMLElement): void {
+    this.#panelHost = host;
+    this.#panel?.attachTo(host);
+  }
+
+  /** Removes the properties panel from the page, whether or not the modeler still exists. */
+  unmountPropertiesPanel(): void {
+    this.#panelHost = undefined;
+    this.#panel?.detach();
   }
 
   async importXml(xml: string): Promise<void> {
     await this.#loadDiagram(() => this.#modeler?.importXML(xml));
-    this.#syncSelection();
     this.zoomFit();
   }
 
   /** Replaces the diagram with the empty one through the normal load path, so load listeners run. */
   async clear(): Promise<void> {
     await this.#loadDiagram(() => this.#modeler?.createDiagram());
-    this.#syncSelection();
     this.zoomFit();
   }
 
   async exportXml(): Promise<string> {
     const result = await this.#modeler?.saveXML({ format: true });
     return result?.xml ?? '';
-  }
-
-  /** Renames the selected element through the command stack, so undo and redo keep working. */
-  updateName(name: string): void {
-    const element = this.#selectedElement();
-    if (!element) return;
-    this.#modeler?.get<Modeling>('modeling').updateProperties(element, { name: name || undefined });
-  }
-
-  /** Why `id` cannot be applied to the selected element, or null when it can. */
-  validateId(id: string): string | null {
-    const current = this.#selectedElement()?.id;
-    return validateElementId(id, (candidate) => candidate !== current && this.#isIdTaken(candidate));
-  }
-
-  /** Applies a new id to the selected element if valid; otherwise changes nothing and returns the reason. */
-  updateId(id: string): string | null {
-    const element = this.#selectedElement();
-    const error = this.validateId(id);
-    if (!element || error) return error;
-    if (id !== element.id) {
-      this.#modeler?.get<Modeling>('modeling').updateProperties(element, { id });
-    }
-    return null;
   }
 
   /** Calls `listener` whenever the user edits the diagram. Loading a diagram does not count as an edit. */
@@ -191,6 +186,10 @@ export class BpmnModeler {
     this.#canvas?.resized();
   }
 
+  get #panel(): PropertiesPanelService | undefined {
+    return this.#modeler?.get<PropertiesPanelService>('propertiesPanel');
+  }
+
   get #canvas(): Canvas | undefined {
     return this.#modeler?.get<Canvas>('canvas');
   }
@@ -220,21 +219,5 @@ export class BpmnModeler {
   #zoomBy(factor: number): void {
     const canvas = this.#canvas;
     canvas?.zoom(canvas.zoom() * factor);
-  }
-
-  #isIdTaken(id: string): boolean {
-    return Boolean(this.#modeler?.get<Moddle>('moddle').ids.assigned(id));
-  }
-
-  #selectedElement(): BpmnElement | undefined {
-    const selected = this.#modeler?.get<Selection>('selection').get() ?? [];
-    return selected.length === 1 ? selected[0] : undefined;
-  }
-
-  #syncSelection(): void {
-    const element = this.#selectedElement();
-    this.#selection.set(
-      element ? { id: element.id, type: element.type, name: element.businessObject.name } : null,
-    );
   }
 }
