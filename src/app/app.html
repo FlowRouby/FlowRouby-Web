@@ -1,1 +1,11 @@
 <router-outlet />
+
+@if (connection.slow()) {
+  <div
+    role="status"
+    class="fixed bottom-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-control border border-border bg-surface px-4 py-2 text-sm text-content shadow-lg"
+  >
+    <span class="size-4 animate-spin rounded-full border-2 border-border border-t-primary" aria-hidden="true"></span>
+    Conectando con el servidor… Puede tardar hasta un minuto si estaba inactivo.
+  </div>
+}
