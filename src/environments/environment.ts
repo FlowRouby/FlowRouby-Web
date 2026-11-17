@@ -1,3 +1,4 @@
+/** Production build (`pnpm build`). The development build swaps this file for `environment.development.ts`. */
 export const environment = {
-  apiUrl: 'http://localhost:6767',
+  apiUrl: 'https://flowrouby-backend.onrender.com',
 };
